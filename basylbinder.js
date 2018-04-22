@@ -158,8 +158,9 @@ function createBasylBinder($$)
     $$._bindElementFinal = function(name, el, attr, get, set)
     {
         // If it's some sort of editable field
-        if(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement)
-        {     
+        // There's a small bug here I'll fix later, I need to actually check if the content-editable field is set to true.
+        if(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable"))
+        {    
             // Good for most types of input...
             el.oninput = (e) =>
             {
@@ -170,12 +171,22 @@ function createBasylBinder($$)
                 }
 
                 // Used to prevent annoying field cursor resets.
-                var s = el.selectionStart, end = el.selectionEnd;
+
+                const allowed = ["text", "url", "password", "telephone", "search"]
+                
                 if (get() != e.target[attr])
+                if((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type')||"").toLowerCase().trim()) !== -1)
+                {
+                    var s = el.selectionStart, end = el.selectionEnd;
                     set(e.target[attr])
 
-                // Prevents annoying field cursor reset.
-                el.setSelectionRange(s, end);
+                    // Prevents annoying field cursor reset.
+                    el.setSelectionRange(s, end);
+                }
+                else
+                {
+                    set(e.target[attr])
+                }             
             };
 
 
