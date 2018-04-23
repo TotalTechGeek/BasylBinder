@@ -8,19 +8,21 @@
         padding:10px;
     }
 </style>
-<vars name="Bobby"></vars>
 
+<vars age="20" name="Jesse Daniel Mitchell"></vars>
+<pvars value="This value persists between page refreshes"></pvars>
 
-<h1>Demo - <v bind="name" placeholder="Bobby"></v></h1>
+<h1>Demo - <v bind="name"></v></h1>
 <hr>
 
-<input bind="name"/>
+<input bind="name" placeholder="Name"/>
 <input bind="age" type="number"/>
-
+<input bind="adjective"/>
+<br><br>
 
 <div watch="text">
     {{name}} is your name, right? <br><br>
-    That's pretty awesome!
+    That's pretty {{adjective}}!
     <br><br>
     Your name is {{name|name.length}} letter{{name|name.length == 1 ? '' : 's' }} long.
     <br><br>
@@ -28,11 +30,30 @@
 
     <br><br>
     Also you are {{age}} years old.
-
+    <br><br>
+    {{drink}} in the United States.
+    <br><br>
+    <hr>
+    <textarea bind="value"></textarea> <br>
+    {{value}}
 </div>
 
 <script>
-$$.var("age", 20)
+$$.var('adjective', 'awesome')
+
+
+$$.createView('age', 'drink', i =>
+{
+    if (i >= 21)
+    {
+        return 'You can drink'
+    }
+    else
+    {
+        return 'You can drink in ' + (21-i) + ' year' + ((21-i)==1?'':'s');
+    }
+})
+
 $$.all()
 </script>
 </body>

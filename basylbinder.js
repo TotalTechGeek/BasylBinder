@@ -44,6 +44,8 @@ function createBasylBinder($$)
     const BASYL_VARS = "vars";
     const BASYL_SCRIPT = "basyl-script";
     const BASYL_DVARS = "dvars";
+    const BASYL_PVARS = "pvars";
+    const BASYL_PVAR_PREFIX = 'bb_';
 
     $$.queueUpdate = function(name, time)
     {
@@ -169,7 +171,7 @@ function createBasylBinder($$)
                 }
 
                 // Used to prevent annoying field cursor resets.
-                const allowed = ["text", "url", "password", "telephone", "search"]
+                const allowed = ["text", "url", "password", "telephone", "search", ""]
                 if (get() != e.target[attr])
                 {
                     if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type') || "").toLowerCase().trim()) !== -1)
@@ -181,10 +183,10 @@ function createBasylBinder($$)
                         // Prevents annoying field cursor reset.
                         el.setSelectionRange(s, end);
                     }
-                }
-                else
-                {
-                    set(e.target[attr])
+                    else
+                    {
+                        set(e.target[attr])    
+                    }
                 }
             }
 
@@ -806,6 +808,29 @@ function createBasylBinder($$)
         return $$.var(name, v);
     }
 
+    // Persisted variable - These will only work in the global scope.
+    $$.pvar = function(name, v, g, s)
+    {
+        const index = BASYL_PVAR_PREFIX + name;
+
+        if(!localStorage[index])
+            localStorage[index] = v
+
+        let set = val =>
+        {
+            localStorage[index] = val
+        }
+
+        let get = () =>
+        {
+            return localStorage[index]
+        }
+
+        $$.create(name, get, set)
+        
+        return $$
+    }
+
     $$.var = function(name, v, g, s)
     {
         var a = new $$._CV(v, g, s);
@@ -851,6 +876,14 @@ function createBasylBinder($$)
             $$.from(el.attributes).for(i => $$(el).var(i.name, i.value));
             el.parentNode.removeChild(el);
         });
+
+        $$.from(document.querySelectorAll(from + BASYL_PVARS)).for(el =>
+        {
+            // pvars have global scope by design.
+            $$.from(el.attributes).for(i=>$$.pvar(i.name, i.value));
+            el.parentNode.removeChild(el);
+        });
+
         $$.from(document.querySelectorAll(from + BASYL_DVARS)).for(el =>
         {
             $$.from(el.attributes).for(i => $$(el).dvar(i.name));
