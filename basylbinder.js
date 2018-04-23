@@ -34,10 +34,10 @@ else
 
 function createBasylBinder($$)
 {
-    $$.bindings = {};
-    $$.bindUpdates = {};
-    $$.updates = {};
-    $$.components = {};
+    $$.bindings = {}
+    $$.bindUpdates = {}
+    $$.updates = {}
+    $$.components = {}
     var forceUpdate = 0;
 
     const LOCAL_BIND_ID = "local-bind";
@@ -76,7 +76,7 @@ function createBasylBinder($$)
         return $$;
     }
 
-    $$.emptyFunction = function() {};
+    $$.emptyFunction = function() {}
 
     $$._bindElementFormat = function(el, func)
     {
@@ -84,11 +84,10 @@ function createBasylBinder($$)
         var prev = el.onchange || $$.emptyFunction;
         el.onchange = e =>
         {
-
             e.target.value = func(e.target.value);
             prev(e);
             el.oninput && el.oninput(e);
-        };
+        }
         return $$;
     }
 
@@ -98,16 +97,17 @@ function createBasylBinder($$)
         let id = $$.bindings[name][0]().count();
 
         let get = () => $$.bindings[name][0]().get(id)
-        let set = val => { 
+        let set = val =>
+        {
             $$.bindings[name][0]().set(val, id)
             $$.update(name)
         }
-       
+
         if (typeof el.attributes["bind-index"] !== "undefined")
         {
             // If it has a bind index defined, set it to that location.
             id = (el.getAttribute("bind-index"));
-            
+
             if (typeof get() === "undefined") set("");
         }
         else
@@ -121,26 +121,25 @@ function createBasylBinder($$)
         if (!oneWay)
         {
 
-            var updateMethod = function()  
+            var updateMethod = function()
             {
                 el[attr] = get()
 
                 // Tells the code to delete this update function
                 // if this element ceases to exist.
-                if(!el.parentNode)
+                if (!el.parentNode)
                 {
                     var z = $$.bindings[name][2].indexOf(updateMethod);
                     $$.bindings[name][2].splice(z, 1);
                 }
             }
-            
+
             $$.bindings[name][2].push(updateMethod);
             el[attr] = get();
         }
 
         $$._bindElementFinal(name, el, attr, get, set)
     }
-
 
     $$._bindElementNormal = function(name, el, attr, oneWay)
     {
@@ -154,13 +153,12 @@ function createBasylBinder($$)
         $$._bindElementFinal(name, el, attr, () => $$.get(name), val => $$.set(name, val))
     }
 
-
     $$._bindElementFinal = function(name, el, attr, get, set)
     {
         // If it's some sort of editable field
         // There's a small bug here I'll fix later, I need to actually check if the content-editable field is set to true.
-        if(el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable"))
-        {    
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable"))
+        {
             // Good for most types of input...
             el.oninput = (e) =>
             {
@@ -171,26 +169,26 @@ function createBasylBinder($$)
                 }
 
                 // Used to prevent annoying field cursor resets.
-
                 const allowed = ["text", "url", "password", "telephone", "search"]
-                
                 if (get() != e.target[attr])
-                if((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type')||"").toLowerCase().trim()) !== -1)
                 {
-                    var s = el.selectionStart, end = el.selectionEnd;
-                    set(e.target[attr])
+                    if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type') || "").toLowerCase().trim()) !== -1)
+                    {
+                        var s = el.selectionStart,
+                            end = el.selectionEnd;
+                        set(e.target[attr])
 
-                    // Prevents annoying field cursor reset.
-                    el.setSelectionRange(s, end);
+                        // Prevents annoying field cursor reset.
+                        el.setSelectionRange(s, end);
+                    }
                 }
                 else
                 {
                     set(e.target[attr])
-                }             
-            };
+                }
+            }
 
-
-            if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file")) 
+            if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file"))
                 el.onchange = (e) =>
                 {
                     if (typeof $$.bindings[name] === "undefined")
@@ -201,7 +199,7 @@ function createBasylBinder($$)
 
                     if (get() != e.target[attr])
                     {
-                        if(el.hasAttribute("on-true") && e.target[attr] == true)
+                        if (el.hasAttribute("on-true") && e.target[attr] == true)
                         {
                             set(el.getAttribute("on-true"))
                         }
@@ -213,12 +211,11 @@ function createBasylBinder($$)
                         {
                             set(e.target[attr])
                         }
-                    }   
-                };
+                    }
+                }
         }
 
     }
-
 
     $$._bindElement = function(name, el, attr, oneWay)
     {
@@ -227,7 +224,7 @@ function createBasylBinder($$)
 
         // Checks if the binding exists, and the element we're binding to exists.
         if (typeof $$.bindings[name] !== "undefined" && typeof el !== "undefined")
-        {   
+        {
 
             // This code is for d-vars, and needs major refactoring.
             if ($$.bindings[name].length == 4 && $$.bindings[name][3] == "Array")
@@ -288,10 +285,8 @@ function createBasylBinder($$)
             $$.bindUpdates[name] = false;
         }
 
-        
         return $$;
     }
-
 
     $$.dget = function(name)
     {
@@ -338,9 +333,8 @@ function createBasylBinder($$)
                 while (--i >= 0 && matches.item(i) !== this)
                 {}
                 return i > -1;
-            };
+            }
     }
-
 
     $$._fromId = function(x)
     {
@@ -362,8 +356,7 @@ function createBasylBinder($$)
         return null;
     }
 
-    
-    $$.closest = function (el, key, selector)
+    $$.closest = function(el, key, selector)
     {
         var selector = (typeof selector === "undefined") ? "[" + LOCAL_BIND_ID + "]" : selector;
         var retval = null;
@@ -388,19 +381,19 @@ function createBasylBinder($$)
 
     $$._fromInput = function(x)
     {
-        var result = {};
+        var result = {}
 
         result.bind = function(name, oneWay)
         {
             $$._bindElement(name, x, "value", oneWay);
             return result;
-        };
-        result.bindEvent = function() {};
+        }
+        result.bindEvent = function() {}
         result.format = function(func)
         {
             $$._bindElementFormat(x, func);
             return result;
-        };
+        }
         return result;
     }
 
@@ -412,15 +405,15 @@ function createBasylBinder($$)
 
     $$._fromElement = function(x)
     {
-        var result = {};
+        var result = {}
 
         result.bind = function(name, attr, oneWay)
         {
             $$._bindElement(name, x, attr, oneWay);
             return result;
-        };
+        }
 
-        result.bindEvent = function() {};
+        result.bindEvent = function() {}
 
         return result;
     }
@@ -431,11 +424,11 @@ function createBasylBinder($$)
         if (typeof x === "string")
         {
             if (x.indexOf("#") === 0) return $$._fromId(x.substring(1));
-            
+
             if (x.indexOf("$*") === 0)
             {
                 var arr = document.querySelectorAll(x.substring(2));
-                arr = $$.from(arr).do(i=>$$.from(i));
+                arr = $$.from(arr).do(i => $$.from(i));
                 return $$.from(arr);
             }
             if (x.indexOf("$") === 0) return $$.from(document.querySelector(x.substring(1)));
@@ -460,8 +453,6 @@ function createBasylBinder($$)
                 result = $$._fromInput(x);
             }
             else result = $$._fromElement(x);
-
-
 
             result.var = function(name, v, g, s)
             {
@@ -495,7 +486,7 @@ function createBasylBinder($$)
                 }
                 return $$.dvar(name, n);
             }
-            
+
             result.watch = function(attr)
             {
 
@@ -523,7 +514,7 @@ function createBasylBinder($$)
 
                 var str;
                 if (full) str = x[attr];
-                else str = (x.getAttribute(attr)||"");
+                else str = (x.getAttribute(attr) || "");
                 // str = "{{Hello}}", str.match(/\{\{[A-Za-z]+(\|.+)?\}\}/g).map(i=>i.substring(2,i.length-2).split("|"))
                 var vals = (str.toString().match(/\{\{[A-Za-z0-9\-_#]+(\|[^}]+(\}[^}]+)?)*\}\}/g) || []).map(i =>
                 {
@@ -642,11 +633,10 @@ function createBasylBinder($$)
                 return $$.set(closest2(x, z), v);
             }
 
-
             return result;
         }
 
-        result = {};
+        result = {}
 
         if (x instanceof Array)
         {
@@ -723,11 +713,12 @@ function createBasylBinder($$)
 
         result.table = function(options)
         {
-            var options = options || {};
+            var options = options ||
+            {}
             if (typeof options.fill === "undefined") options.fill = "";
             if (typeof options.head === "undefined") options.head = [];
             var max = result.max()[1];
-            
+
             for (var i = 0; i < x.length; i++)
             {
                 while (x[i].length < max) x[i].push("");
@@ -736,11 +727,11 @@ function createBasylBinder($$)
             var tbody = "<tbody>" + x.map(i => "<tr>" + i.map(j => "<td>" + (j || options.fill) + "</td>").join("") + "</tr>").join("") + "</tbody>";
             var thead = "";
 
-            if(options.head.length)
+            if (options.head.length)
             {
-                thead = "<thead><tr>" + options.head.map(i=>"<th>" + i + "</th>").join('') + "</tr></thead>";
+                thead = "<thead><tr>" + options.head.map(i => "<th>" + i + "</th>").join('') + "</tr></thead>";
             }
-            
+
             return "<table>" + thead + tbody + "</table>";
         }
 
@@ -760,7 +751,7 @@ function createBasylBinder($$)
         }
 
         return result;
-    };
+    }
 
     $$.templates = {
         getInt: (v) => parseInt(v.val) || 0,
@@ -774,11 +765,11 @@ function createBasylBinder($$)
         setInt: (t, v) => t.val = parseInt(v),
         setFloat: (t, v) => t.val = parseFloat(v),
         setAny: (t, v) => t.val = v
-    };
+    }
 
     $$._CV = function(v, g, s)
     {
-        var obj = {};
+        var obj = {}
         obj.val = (v) ? v : "";
         var get = (g) ? g : $$.templates.getAny;
         var set = (s) ? s : $$.templates.setAny;
@@ -792,7 +783,7 @@ function createBasylBinder($$)
         name = name.toLowerCase();
         var obj = {
             arr: []
-        };
+        }
         var set = (obj, v, i) => obj.arr[i] = v;
         var get = (obj, i) => obj.arr[i];
         obj.set = (v, i) => set(obj, v, i);
@@ -829,7 +820,7 @@ function createBasylBinder($$)
 
     $$.localScopes = function()
     {
-        
+
         var from = (typeof from === "undefined") ? "" : (from + " ");
         $$.from(document.querySelectorAll(from + "[" + LOCAL_BIND_ID + "]")).for(i =>
         {
@@ -877,44 +868,47 @@ function createBasylBinder($$)
 
         // $$.localScopes(); // Not necessary because it's covered in htmlvars
         $$.htmlvars(from);
-        
+
         var arr = document.querySelectorAll(from + "component[make]");
-        
+
         $$.from(arr).for(y =>
         {
-            $$.components[y.getAttribute("type")] = [y.innerHTML, y.getAttribute("make"), (y.querySelector("bindings")||{textContent:""}).textContent];
+            $$.components[y.getAttribute("type")] = [y.innerHTML, y.getAttribute("make"), (y.querySelector("bindings") ||
+            {
+                textContent: ""
+            }).textContent];
             y.parentNode.removeChild(y);
         });
 
         arr = document.querySelectorAll(from + "component[from]");
-        $$.from(arr).for(y=>
+        $$.from(arr).for(y =>
         {
             var type = y.getAttribute("type")
             var vars = $$.components[type][1].split(' ');
             var vars2 = y.getAttribute("from").split(' ');
             var t = $$.components[type][0];
-            vars.forEach((i,x)=>
+            vars.forEach((i, x) =>
             {
                 var reg = new RegExp("{{" + i + "}}", "g");
                 t = t.replace(reg, "{{" + vars2[x] + "}}");
             });
-            
+
             y.setAttribute("was-from", vars2.join(" "));
             y.removeAttribute("from");
             y.setAttribute("watch", "html");
             y.innerHTML = t;
 
-            vars.forEach((i,x) => 
+            vars.forEach((i, x) =>
             {
-                $$.from(y.querySelectorAll('[vname="' + i + '"]')).for(i=>
+                $$.from(y.querySelectorAll('[vname="' + i + '"]')).for(i =>
                 {
                     i.setAttribute("bind", vars2[x]);
                 });
 
-                $$.from(y.querySelectorAll('bindings')).for(i=>i.parentNode.removeChild(i));
+                $$.from(y.querySelectorAll('bindings')).for(i => i.parentNode.removeChild(i));
             });
         });
-        
+
         arr = document.querySelectorAll(from + "[watch]:not([watched])");
         $$.from(arr).for(y =>
         {
@@ -927,7 +921,6 @@ function createBasylBinder($$)
             y.setAttribute("watched", y.getAttribute("watch").toLowerCase());
             y.removeAttribute("watch");
         });
-
 
         arr = document.querySelectorAll(from + '[bind]:not([bound])');
         $$.from(arr).for((y) =>
@@ -948,35 +941,35 @@ function createBasylBinder($$)
         });
 
         arr = document.querySelectorAll(from + BASYL_SCRIPT);
-        $$.from(arr).for(y => 
+        $$.from(arr).for(y =>
         {
             eval(y.textContent);
             y.parentNode.removeChild(y);
         });
-        
+
         arr = document.querySelectorAll(from + "[basyl-if]:not(basyl-if-watched)");
-        $$.from(arr).for(y => 
+        $$.from(arr).for(y =>
         {
             var j;
             var bind = y.getAttribute("basyl-if");
             var lam = x => x;
-           
-            if((j=bind.indexOf('|')) != -1)
+
+            if ((j = bind.indexOf('|')) != -1)
             {
-                lam = new Function(bind.substring(0,j), 'return ' + bind.substring(j+1));
+                lam = new Function(bind.substring(0, j), 'return ' + bind.substring(j + 1));
                 bind = bind.substring(0, j);
             }
 
             var def = y.style.display;
             bind = closest2(y, bind);
 
-            $$.bind(bind, () => 
+            $$.bind(bind, () =>
             {
-                if(lam($$.get(bind))) y.style.display = def;
+                if (lam($$.get(bind))) y.style.display = def;
                 else y.style.display = "none";
             });
 
-            if(lam($$.get(bind))) y.style.display = def;
+            if (lam($$.get(bind))) y.style.display = def;
             else y.style.display = "none";
 
             y.setAttribute("basyl-if-watched", bind);
