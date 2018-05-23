@@ -47,12 +47,20 @@ function createBasylBinder($$)
     const BASYL_PVARS = "pvars";
     const BASYL_PVAR_PREFIX = 'bb_';
 
+    /**
+     * Queues an update, delays previous attempts at an update.
+     * This is currently not in use internally.
+     * 
+     * @param {*} name 
+     * @param {*} time 
+     */
     $$.queueUpdate = function(name, time)
     {
         if (typeof $$.updates[name] !== "undefined")
         {
             clearTimeout($$.updates[name]);
         }
+
         $$.updates[name] = setTimeout(() =>
         {
             $$.update(name);
@@ -60,6 +68,11 @@ function createBasylBinder($$)
         }, time);
     }
 
+    /**
+     * Binds a variable to another variable, or a variable to a function.
+     * @param {*} name 
+     * @param {*} n 
+     */
     $$.bind = function(name, n)
     {
         name = name.toLowerCase()
@@ -71,6 +84,10 @@ function createBasylBinder($$)
         return $$;
     }
 
+    /**
+     * Erases a variable from existence.
+     * @param {*} name 
+     */
     $$.forget = function(name)
     {
         name = name.toLowerCase()
@@ -80,6 +97,13 @@ function createBasylBinder($$)
 
     $$.emptyFunction = function() {}
 
+    /**
+     * Binds a format to an element.
+     * Used internally. Do not call directly.
+     * 
+     * @param {*} el 
+     * @param {*} func 
+     */
     $$._bindElementFormat = function(el, func)
     {
         el.value = func(el.value);
@@ -93,6 +117,15 @@ function createBasylBinder($$)
         return $$;
     }
 
+    /**
+     * Binds an element to a dvar, used internally.
+     * Do not call directly. 
+     * 
+     * @param {*} name 
+     * @param {*} el 
+     * @param {*} attr 
+     * @param {*} oneWay 
+     */
     $$._bindElementDVar = function(name, el, attr, oneWay)
     {
         // Get the Bind-Index of the DVAR
@@ -109,7 +142,6 @@ function createBasylBinder($$)
         {
             // If it has a bind index defined, set it to that location.
             id = (el.getAttribute("bind-index"));
-
             if (typeof get() === "undefined") set("");
         }
         else
@@ -143,6 +175,15 @@ function createBasylBinder($$)
         $$._bindElementFinal(name, el, attr, get, set)
     }
 
+    /**
+     * Binds an element to a normal variable. 
+     * Used internally. Do not call directly. 
+     * 
+     * @param {*} name 
+     * @param {*} el 
+     * @param {*} attr 
+     * @param {*} oneWay 
+     */
     $$._bindElementNormal = function(name, el, attr, oneWay)
     {
         if (!oneWay)
@@ -155,15 +196,26 @@ function createBasylBinder($$)
         $$._bindElementFinal(name, el, attr, () => $$.get(name), val => $$.set(name, val))
     }
 
+    /**
+     * Final step in binding an element to a variable.
+     * Used internally.
+     * 
+     * @param {*} name 
+     * @param {*} el 
+     * @param {*} attr 
+     * @param {*} get 
+     * @param {*} set 
+     */
     $$._bindElementFinal = function(name, el, attr, get, set)
     {
         // If it's some sort of editable field
         // There's a small bug here I'll fix later, I need to actually check if the content-editable field is set to true.
-        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable"))
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable") || el instanceof HTMLSelectElement)
         {
             // Good for most types of input...
             el.oninput = (e) =>
             {
+                // Garbage Collection
                 if (typeof $$.bindings[name] === "undefined")
                 {
                     delete el.oninput;
@@ -178,6 +230,7 @@ function createBasylBinder($$)
                     {
                         var s = el.selectionStart,
                             end = el.selectionEnd;
+
                         set(e.target[attr])
 
                         // Prevents annoying field cursor reset.
@@ -190,9 +243,11 @@ function createBasylBinder($$)
                 }
             }
 
+            // If it's a checkbox or a file
             if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file"))
                 el.onchange = (e) =>
                 {
+                    // Garbage Collection
                     if (typeof $$.bindings[name] === "undefined")
                     {
                         delete el.oninput;
@@ -201,14 +256,17 @@ function createBasylBinder($$)
 
                     if (get() != e.target[attr])
                     {
+                        // Because it's a checkbox, check if there's an on-true value it should be set to
                         if (el.hasAttribute("on-true") && e.target[attr] == true)
                         {
                             set(el.getAttribute("on-true"))
                         }
+                        // or an on-false
                         else if (el.hasAttribute("on-false") && e.target[attr] == false)
                         {
                             set(el.getAttribute("on-false"))
                         }
+                        // otherwise just use the actual value
                         else
                         {
                             set(e.target[attr])
@@ -219,6 +277,15 @@ function createBasylBinder($$)
 
     }
 
+    /**
+     * First step in binding an element to a variable. 
+     * Used internally.
+     *  
+     * @param {*} name 
+     * @param {*} el 
+     * @param {*} attr 
+     * @param {*} oneWay 
+     */
     $$._bindElement = function(name, el, attr, oneWay)
     {
         oneWay = (typeof oneWay === "undefined") ? false : oneWay;
@@ -242,6 +309,13 @@ function createBasylBinder($$)
         return $$;
     }
 
+    /**
+     * Creates a 'variable' you can access from the provided getters and setters.
+     * 
+     * @param {*} name 
+     * @param {*} getter 
+     * @param {*} setter 
+     */
     $$.create = function(name, getter, setter)
     {
         name = name.toLowerCase()
@@ -252,6 +326,15 @@ function createBasylBinder($$)
         return $$;
     }
 
+    /**
+     * Creates a 'view' of a variable, which is basically a transformation of the source variable.
+     * 
+     * It will automatically bind the first variable to the second.
+     * 
+     * @param {String} name 
+     * @param {String} formattedName 
+     * @param {Function} mutator 
+     */
     $$.createView = function(name, formattedName, mutator)
     {
         name = name.toLowerCase(), formattedName = formattedName.toLowerCase()
@@ -260,7 +343,11 @@ function createBasylBinder($$)
         $$.bind(name, formattedName);
         return $$;
     }
-
+    
+    /**
+     * Updates a variable.
+     * @param {String} name 
+     */
     $$.update = function(name)
     {
         name = name.toLowerCase()
@@ -290,6 +377,10 @@ function createBasylBinder($$)
         return $$;
     }
 
+    /**
+     * Gets a dynamic variable.
+     * @param {*} name 
+     */
     $$.dget = function(name)
     {
         name = name.toLowerCase()
@@ -299,6 +390,10 @@ function createBasylBinder($$)
         }
     }
 
+    /**
+     * Gets a variable.
+     * @param {*} name 
+     */
     $$.get = function(name)
     {
         name = name.toLowerCase()
@@ -308,6 +403,11 @@ function createBasylBinder($$)
         }
     }
 
+    /**
+     * Sets a variable
+     * @param {*} name 
+     * @param {*} v 
+     */
     $$.set = function(name, v)
     {
         name = name.toLowerCase();
@@ -320,6 +420,8 @@ function createBasylBinder($$)
         return $$;
     }
 
+    // Polyfill for quite a few browsers.
+    // Normally I'd leave this out for Babili, but it was quite necessary for decent cross-browser use.
     if (!Element.prototype.matches)
     {
         Element.prototype.matches =
@@ -338,11 +440,17 @@ function createBasylBinder($$)
             }
     }
 
+
     $$._fromId = function(x)
     {
         return $$.from(document.getElementById(x));
     }
 
+    /**
+     * Used internally to find the closest variable match.
+     * @param {*} el 
+     * @param {*} key 
+     */
     function closest2(el, key)
     {
         key = key.toLowerCase();
@@ -358,6 +466,12 @@ function createBasylBinder($$)
         return null;
     }
 
+    /**
+     * Finds the closest local-bind.
+     * @param {*} el 
+     * @param {*} key 
+     * @param {*} selector 
+     */
     $$.closest = function(el, key, selector)
     {
         var selector = (typeof selector === "undefined") ? "[" + LOCAL_BIND_ID + "]" : selector;
@@ -380,6 +494,7 @@ function createBasylBinder($$)
     var closest = $$.closest;
 
     $$._randStr = () => Math.random().toString(36).substring(2)
+
 
     $$._fromInput = function(x)
     {
@@ -966,8 +1081,39 @@ function createBasylBinder($$)
                     setTimeout(() => $$.all(from, attempt), attempt * 200);
                 return;
             }
+
             var oneWay = typeof y.attributes["one-way"] !== "undefined";
-            var bindTo = (typeof y.attributes["bind-to"] === "undefined") ? (y instanceof HTMLInputElement ? (((typeof y.attributes["type"] === "object" && y.getAttribute("type") === "checkbox") ? "checked" : "value")) : y instanceof HTMLTextAreaElement ? "value" : "textContent") : y.getAttribute("bind-to");
+            
+            var bindTo
+            
+            // Create the default bind to for each of the elements
+            if(typeof y.attributes["bind-to"] === "undefined")
+            {
+                if(y instanceof HTMLInputElement)
+                {
+                    if (typeof y.attributes["type"] === "object" && y.getAttribute("type") === "checkbox")
+                    {
+                        bindTo = "checked"
+                    }
+                    else
+                    {
+                        bindTo = "value"
+                    }
+                } 
+                else if (y instanceof HTMLTextAreaElement || y instanceof HTMLSelectElement)
+                {
+                    bindTo = "value"
+                }
+                else
+                {
+                    bindTo = "textContent"
+                } 
+            }
+            else
+            {
+                bindTo = y.getAttribute("bind-to")
+            }
+            
             y.setAttribute("bound", bind);
             y.removeAttribute("bind");
             $$._bindElement(bind, y, bindTo, oneWay);

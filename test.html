@@ -9,7 +9,7 @@
     }
 </style>
 
-<vars age="20" name="Jesse Daniel Mitchell"></vars>
+<vars age="20" name="Jesse Daniel Mitchell" x="X"></vars>
 <pvars value="This value persists between page refreshes"></pvars>
 
 <h1>Demo - <v bind="name"></v></h1>
@@ -36,7 +36,18 @@
     <hr>
     <textarea bind="value"></textarea> <br>
     {{value}}
+    <br>
+    {{x}}
 </div>
+
+
+<select bind="x">
+    <option value="X">Lol</option>
+    <option value="Y">World</option>
+</select>
+
+
+
 
 <script>
 $$.var('adjective', 'awesome')
