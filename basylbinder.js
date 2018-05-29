@@ -224,21 +224,21 @@ function createBasylBinder($$)
 
                 // Used to prevent annoying field cursor resets.
                 const allowed = ["text", "url", "password", "telephone", "search", ""]
-                if (get() != e.target[attr])
+                if (get() != el[attr])
                 {
                     if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type') || "").toLowerCase().trim()) !== -1)
                     {
                         var s = el.selectionStart,
                             end = el.selectionEnd;
 
-                        set(e.target[attr])
+                        set(el[attr])
 
                         // Prevents annoying field cursor reset.
                         el.setSelectionRange(s, end);
                     }
                     else
                     {
-                        set(e.target[attr])    
+                        set(el[attr])    
                     }
                 }
             }
@@ -254,22 +254,22 @@ function createBasylBinder($$)
                         return;
                     }
 
-                    if (get() != e.target[attr])
+                    if (get() != el[attr])
                     {
                         // Because it's a checkbox, check if there's an on-true value it should be set to
-                        if (el.hasAttribute("on-true") && e.target[attr] == true)
+                        if (el.hasAttribute("on-true") && el[attr] == true)
                         {
                             set(el.getAttribute("on-true"))
                         }
                         // or an on-false
-                        else if (el.hasAttribute("on-false") && e.target[attr] == false)
+                        else if (el.hasAttribute("on-false") && el[attr] == false)
                         {
                             set(el.getAttribute("on-false"))
                         }
                         // otherwise just use the actual value
                         else
                         {
-                            set(e.target[attr])
+                            set(el[attr])
                         }
                     }
                 }
@@ -958,7 +958,7 @@ function createBasylBinder($$)
         return [...Array(y - x + 1).keys()].map(i => i + x);
     }
 
-    $$.localScopes = function()
+    $$.localScopes = function(from)
     {
 
         var from = (typeof from === "undefined") ? "" : (from + " ");
@@ -985,7 +985,7 @@ function createBasylBinder($$)
     $$.htmlvars = function(from)
     {
         var from = (typeof from === "undefined") ? "" : (from + " ");
-        $$.localScopes();
+        $$.localScopes(from);
         $$.from(document.querySelectorAll(from + BASYL_VARS)).for(el =>
         {
             $$.from(el.attributes).for(i => $$(el).var(i.name, i.value));
@@ -1007,34 +1007,27 @@ function createBasylBinder($$)
         return $$;
     }
 
-    $$.all = function(from, attempt)
+    $$.componentInit = function(from)
     {
-        $$.style();
-        var from = (typeof from === "undefined") ? "" : (from + " ");
-        var attempt = (typeof attempt === "undefined") ? 0 : attempt;
-        from += " ";
-
-        // $$.localScopes(); // Not necessary because it's covered in htmlvars
-        $$.htmlvars(from);
-
-        var arr = document.querySelectorAll(from + "component[make]");
+        let arr = document.querySelectorAll(from + "component[make]");
 
         $$.from(arr).for(y =>
         {
-            $$.components[y.getAttribute("type")] = [y.innerHTML, y.getAttribute("make"), (y.querySelector("bindings") ||
-            {
-                textContent: ""
-            }).textContent];
+            $$.components[y.getAttribute("type")] = [y.innerHTML, y.getAttribute("make")];
             y.parentNode.removeChild(y);
         });
+    }
 
-        arr = document.querySelectorAll(from + "component[from]");
+    $$.componentMake = function(from)
+    {
+        let arr = document.querySelectorAll(from + "component[from]");
         $$.from(arr).for(y =>
         {
             var type = y.getAttribute("type")
             var vars = $$.components[type][1].split(' ');
             var vars2 = y.getAttribute("from").split(' ');
             var t = $$.components[type][0];
+            
             vars.forEach((i, x) =>
             {
                 var reg = new RegExp("{{" + i + "}}", "g");
@@ -1044,20 +1037,42 @@ function createBasylBinder($$)
             y.setAttribute("was-from", vars2.join(" "));
             y.removeAttribute("from");
             y.setAttribute("watch", "html");
+            
+            let extraVars = y.querySelectorAll(BASYL_VARS)
+            
             y.innerHTML = t;
+
+            $$.from(extraVars).for(i=>y.appendChild(i))
+            
+            if(extraVars.length) y.setAttribute('local-bind', '')
 
             vars.forEach((i, x) =>
             {
                 $$.from(y.querySelectorAll('[vname="' + i + '"]')).for(i =>
                 {
                     i.setAttribute("bind", vars2[x]);
-                });
+                })
+            })
+            
+        })
+    }
 
-                $$.from(y.querySelectorAll('bindings')).for(i => i.parentNode.removeChild(i));
-            });
-        });
+    $$.all = function(from, attempt)
+    {
 
-        arr = document.querySelectorAll(from + "[watch]:not([watched])");
+        $$.style();
+        var from = (typeof from === "undefined") ? "" : (from + " ");
+        var attempt = (typeof attempt === "undefined") ? 0 : attempt;
+        from += " ";
+
+        // Component Code
+        $$.componentInit(from)
+        $$.componentMake(from)
+
+        // $$.localScopes(); // Not necessary because it's covered in htmlvars
+        $$.htmlvars(from);
+
+        var arr = document.querySelectorAll(from + "[watch]:not([watched])");
         $$.from(arr).for(y =>
         {
             var watched = y.getAttribute("watch").split(" ");
