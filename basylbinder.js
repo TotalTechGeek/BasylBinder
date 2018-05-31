@@ -196,6 +196,91 @@ function createBasylBinder($$)
         $$._bindElementFinal(name, el, attr, () => $$.get(name), val => $$.set(name, val))
     }
 
+
+    /**
+     * Extracted for optimization purposes.
+     * Updates from most types of inputs.
+     * 
+     * @param {*} e 
+     * @param {*} name 
+     * @param {*} el 
+     * @param {*} attr 
+     * @param {*} get 
+     * @param {*} set 
+     */
+    function updateFromInput(e, name, el, attr, get, set)
+    {
+         // Garbage Collection
+         if (typeof $$.bindings[name] === "undefined")
+         {
+             delete el.oninput;
+             return;
+         }
+
+         // Used to prevent annoying field cursor resets.
+         const allowed = ["text", "url", "password", "telephone", "search", ""]
+         if (get() != e.target[attr])
+         {
+             if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type') || "").toLowerCase().trim()) !== -1)
+             {
+                 var s = el.selectionStart,
+                     end = el.selectionEnd;
+
+                 set(e.target[attr])
+
+                 // Prevents annoying field cursor reset.
+                 el.setSelectionRange(s, end);
+             }
+             else
+             {
+                 set(e.target[attr])    
+             }
+         }
+    }
+
+    /**
+     * Used to update from other type of fields, like checkboxes 
+     * and selects 
+     * 
+     * @param {*} e 
+     * @param {*} name
+     * @param {*} el 
+     * @param {*} attr 
+     * @param {*} get 
+     * @param {*} set 
+     */
+    function updateFromOther(e, name, el, attr, get, set)
+    {
+        // Garbage Collection
+        if (typeof $$.bindings[name] === "undefined")
+        {
+            delete el.oninput;
+            return;
+        }
+
+        // If the current value is not the same as the new one
+        if (get() != e.target[attr])
+        {
+            // Because it's a checkbox, check if there's an on-true value it should be set to
+            if (el.hasAttribute("on-true") && e.target[attr] == true)
+            {
+                set(el.getAttribute("on-true"))
+            }
+            // or an on-false
+            else if (el.hasAttribute("on-false") && e.target[attr] == false)
+            {
+                set(el.getAttribute("on-false"))
+            }
+            // otherwise just use the actual value
+            else
+            {
+                set(e.target[attr])
+            }
+        }
+    }
+
+
+
     /**
      * Final step in binding an element to a variable.
      * Used internally.
@@ -212,67 +297,17 @@ function createBasylBinder($$)
         // There's a small bug here I'll fix later, I need to actually check if the content-editable field is set to true.
         if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable") || el instanceof HTMLSelectElement)
         {
-            // Good for most types of input...
-            el.oninput = (e) =>
+            if(!(el instanceof HTMLSelectElement))
             {
-                // Garbage Collection
-                if (typeof $$.bindings[name] === "undefined")
-                {
-                    delete el.oninput;
-                    return;
-                }
-
-                // Used to prevent annoying field cursor resets.
-                const allowed = ["text", "url", "password", "telephone", "search", ""]
-                if (get() != el[attr])
-                {
-                    if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type') || "").toLowerCase().trim()) !== -1)
-                    {
-                        var s = el.selectionStart,
-                            end = el.selectionEnd;
-
-                        set(el[attr])
-
-                        // Prevents annoying field cursor reset.
-                        el.setSelectionRange(s, end);
-                    }
-                    else
-                    {
-                        set(el[attr])    
-                    }
-                }
+                // Good for most types of input...
+                el.oninput = e => updateFromInput(e, name, el, attr, get, set)
             }
-
-            // If it's a checkbox or a file
-            if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file"))
-                el.onchange = (e) =>
-                {
-                    // Garbage Collection
-                    if (typeof $$.bindings[name] === "undefined")
-                    {
-                        delete el.oninput;
-                        return;
-                    }
-
-                    if (get() != el[attr])
-                    {
-                        // Because it's a checkbox, check if there's an on-true value it should be set to
-                        if (el.hasAttribute("on-true") && el[attr] == true)
-                        {
-                            set(el.getAttribute("on-true"))
-                        }
-                        // or an on-false
-                        else if (el.hasAttribute("on-false") && el[attr] == false)
-                        {
-                            set(el.getAttribute("on-false"))
-                        }
-                        // otherwise just use the actual value
-                        else
-                        {
-                            set(el[attr])
-                        }
-                    }
-                }
+                
+            // If it's a checkbox or a file or select
+            if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file") || el instanceof HTMLSelectElement)
+            {
+                el.onchange = (e) => updateFromOther(e, name, el, attr, get, set)                
+            }
         }
 
     }
