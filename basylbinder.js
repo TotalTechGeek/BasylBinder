@@ -995,9 +995,7 @@ function createBasylBinder($$)
      */
     $$.localScopes = function(from)
     {
-
-        var from = (typeof from === "undefined") ? "" : (from + " ");
-        $$.from(document.querySelectorAll(from + "[" + LOCAL_BIND_ID + "]")).for(i =>
+        $$.from('*' + fromFix(from) + "[" + LOCAL_BIND_ID + "]").for(i =>
         {
             if (i.getAttribute(LOCAL_BIND_ID) === "")
             {
@@ -1011,8 +1009,7 @@ function createBasylBinder($$)
      */
     $$.style = function(from)
     {
-        from = fromFix(from)
-        $$.from(document.querySelectorAll(from + 'basyl-style,script[type="basyl-style"]')).for(i =>
+        $$.from('*' + fromFix(from) + 'basyl-style,script[type="basyl-style"]').for(i =>
         {
             var a = document.createElement("style");
             a.innerHTML = i.innerHTML;
@@ -1030,28 +1027,24 @@ function createBasylBinder($$)
         from = fromFix(from);
         
         $$.localScopes(from);
-        $$.from(document.querySelectorAll(from + BASYL_VARS)).for(el =>
-        {
-            $$.from(el.attributes).for(i => $$.from(el).var(i.name, i.value));
-            el.parentNode.removeChild(el);
-        });
 
-        $$.from(document.querySelectorAll(from + BASYL_SVARS)).for(el =>
+        function varSetup(type, func)
         {
-            $$.from(el.attributes).for(i => $$.from(el).const(i.name, i.value));
-            el.parentNode.removeChild(el);
-        });
+            $$.from('*' + from + type).for(el =>
+            {
+                $$.from(el.attributes).for(i => $$.from(el)[func](i.name, i.value));
+                el.parentNode.removeChild(el)
+            })
+        }
+        
+        varSetup(BASYL_VARS, 'var')
+        varSetup(BASYL_SVARS, 'const')
+        varSetup(BASYL_DVARS, 'dvar')        
 
-        $$.from(document.querySelectorAll(from + BASYL_PVARS)).for(el =>
+        $$.from('*' + from + BASYL_PVARS).for(el =>
         {
             // pvars have global scope by design.
             $$.from(el.attributes).for(i=>$$.pvar(i.name, i.value));
-            el.parentNode.removeChild(el);
-        });
-
-        $$.from(document.querySelectorAll(from + BASYL_DVARS)).for(el =>
-        {
-            $$.from(el.attributes).for(i => $$(el).dvar(i.name));
             el.parentNode.removeChild(el);
         });
        
@@ -1064,9 +1057,7 @@ function createBasylBinder($$)
      */
     $$.componentInit = function(from)
     {
-        let arr = document.querySelectorAll(from + "component[make]");
-
-        $$.from(arr).for(y =>
+        $$.from('*' + fromFix(from) + "component[make]").for(y =>
         {
             $$.components[y.getAttribute("type")] = [y.innerHTML];
             y.parentNode.removeChild(y);
@@ -1081,8 +1072,7 @@ function createBasylBinder($$)
      */
     $$.componentMake = function(from)
     {
-        let arr = document.querySelectorAll(from + "component[from]");
-        $$.from(arr).for(y =>
+        $$.from('*' + fromFix(from) + "component[from]").for(y =>
         {
             var type = y.getAttribute("type")
         
@@ -1106,10 +1096,7 @@ function createBasylBinder($$)
 
     $$.basylIf = function(from)
     {
-        from = fromFix(from)
-
-        let arr = document.querySelectorAll(from + "[basyl-if]:not(basyl-if-watched)");
-        $$.from(arr).for(y =>
+        $$.from('*' + fromFix(from) + "[basyl-if]:not(basyl-if-watched)").for(y =>
         {
             var j;
             var bind = y.getAttribute("basyl-if");
@@ -1140,10 +1127,7 @@ function createBasylBinder($$)
 
     $$.basylScript = function(from)
     {
-        from = fromFix(from)
-        
-        let arr = document.querySelectorAll(from + BASYL_SCRIPT);
-        $$.from(arr).for(y =>
+        $$.from('*' + fromFix(from) + BASYL_SCRIPT).for(y =>
         {
             eval(y.textContent);
             y.parentNode.removeChild(y);
@@ -1151,11 +1135,8 @@ function createBasylBinder($$)
     }
 
     $$.basylWatch = function(from)
-    {
-        from = fromFix(from)
-        
-        let arr = document.querySelectorAll(from + "[watch]:not([watched])");
-        $$.from(arr).for(y =>
+    {        
+        $$.from('*' + fromFix(from) + "[watch]:not([watched])").for(y =>
         {
             var watched = y.getAttribute("watch").split(" ");
             $$.from(watched).for(i =>
@@ -1169,13 +1150,10 @@ function createBasylBinder($$)
     }
 
     $$.basylBind = function(from, attempt)
-    {
-        from = fromFix(from)
-        
+    {        
         var attempt = (typeof attempt === "undefined") ? 0 : attempt;        
         
-        arr = document.querySelectorAll(from + '[bind]:not([bound])');
-        $$.from(arr).for((y) =>
+        $$.from('*' + fromFix(from) + '[bind]:not([bound])').for((y) =>
         {
             var bind = closest2(y, y.getAttribute("bind"));
             if (typeof $$.bindings[bind] === "undefined")
