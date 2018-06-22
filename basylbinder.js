@@ -40,6 +40,15 @@ function createBasylBinder($$)
     $$.components = {}
     let forceUpdate = 0;
 
+    // used to make duplicates or to simply
+    // convert node lists to arrays
+    function _toConsArray(nodeList)
+    {
+        let arr = []
+        for(let i = 0; i < nodeList.length; i++) arr.push(nodeList[i])
+        return arr
+    }
+
     const LOCAL_BIND_ID = "local-bind";
     const BASYL_VARS = "vars";
     const BASYL_SCRIPT = "basyl-script";
@@ -96,7 +105,7 @@ function createBasylBinder($$)
         return $$;
     }
 
-    $$.emptyFunction = function() {}
+    let emptyFunction = () => {}
 
     /**
      * Binds a format to an element.
@@ -108,7 +117,7 @@ function createBasylBinder($$)
     function _bindElementFormat(el, func)
     {
         el.value = func(el.value);
-        let prev = el.onchange || $$.emptyFunction;
+        let prev = el.onchange || emptyFunction;
         el.onchange = e =>
         {
             e.target.value = func(e.target.value);
@@ -354,8 +363,8 @@ function createBasylBinder($$)
     $$.create = function(name, getter, setter)
     {
         name = name.toLowerCase()
-        getter = getter || $$.emptyFunction;
-        setter = setter || $$.emptyFunction;
+        getter = getter || emptyFunction;
+        setter = setter || emptyFunction;
         $$.bindUpdates[name] = false;
         $$.bindings[name] = [getter, setter, []];
         return $$;
@@ -373,7 +382,7 @@ function createBasylBinder($$)
     $$.createView = function(name, formattedName, mutator)
     {
         name = name.toLowerCase(), formattedName = formattedName.toLowerCase()
-        if (typeof $$.bindings[name] === "undefined") htmlvars();
+        if (typeof $$.bindings[name] === "undefined") htmlvars(' ');
         $$.create(formattedName, () => mutator($$.get(name)));
         $$.bind(name, formattedName);
         return $$;
@@ -386,6 +395,7 @@ function createBasylBinder($$)
     $$.update = function(name)
     {
         name = name.toLowerCase()
+
         if (typeof $$.bindings[name] !== "undefined")
         {
             if ($$.bindUpdates[name]) return $$;
@@ -452,7 +462,7 @@ function createBasylBinder($$)
             
             // Checks if the setter exists
             if($$.bindings[name][1])
-            {
+            {                
                 $$.bindings[name][1](v);
                 $$.update(name);    
             }
@@ -613,7 +623,7 @@ function createBasylBinder($$)
                     if (y = $$.closest(x))
                     {
                         y = y.getAttribute(LOCAL_BIND_ID);
-                        let a = [...arguments]
+                        let a = _toConsArray(arguments)
                         a[0] = y + ':' + a[0]                        
                         return func.apply(null, a);
                     }
@@ -854,7 +864,7 @@ function createBasylBinder($$)
         result.release = () => x
 
         // converts node lists and similar iterable structures to an array
-        result.toArray = () => x = [...x]
+        result.toArray = () => x = _toConsArray(x)
 
         // a check and then an execution of the conversion
         result._arrayFix = () => !Array.isArray(x) && result.toArray()
@@ -1041,7 +1051,7 @@ function createBasylBinder($$)
 
     $$.range = function(x, y)
     {
-        return [...Array(y - x + 1).keys()].map(i => i + x);
+        return _toConsArray(Array(y - x + 1).keys()).map(i => i + x);
     }
 
     /**
@@ -1051,7 +1061,7 @@ function createBasylBinder($$)
      */
     function localScopes(from)
     {
-        $$.from('*' + fromFix(from) + "[" + LOCAL_BIND_ID + "]").for(i =>
+        $$.from('*' + from + "[" + LOCAL_BIND_ID + "]").for(i =>
         {
             if (i.getAttribute(LOCAL_BIND_ID) === "")
             {
@@ -1064,8 +1074,8 @@ function createBasylBinder($$)
      * Creates bindings to stylesheets
      */
     function style(from)
-    {
-        $$.from('*' + fromFix(from) + 'basyl-style,script[type="basyl-style"]').for(i =>
+    {        
+        $$.from('*' + from + 'basyl-style,script[type="basyl-style"]').for(i =>
         {
             let a = document.createElement("style");
             a.innerHTML = i.innerHTML;
@@ -1080,8 +1090,6 @@ function createBasylBinder($$)
      */
     function htmlvars(from)
     {
-        from = fromFix(from);
-        
         localScopes(from);
 
         function varSetup(type, func)
@@ -1113,7 +1121,7 @@ function createBasylBinder($$)
      */
     function componentInit(from)
     {
-        $$.from('*' + fromFix(from) + "component[make]").for(y =>
+        $$.from('*' + from + "component[make]").for(y =>
         {
             $$.components[y.getAttribute("type")] = [y.innerHTML];
             y.parentNode.removeChild(y);
@@ -1128,7 +1136,7 @@ function createBasylBinder($$)
      */
     function componentMake(from)
     {
-        $$.from('*' + fromFix(from) + "component[from]").for(y =>
+        $$.from('*' + from + "component[from]").for(y =>
         {
             let type = y.getAttribute("type")
         
@@ -1152,7 +1160,7 @@ function createBasylBinder($$)
 
     function basylIf(from)
     {
-        $$.from('*' + fromFix(from) + "[basyl-if]:not(basyl-if-watched)").for(y =>
+        $$.from('*' + from + "[basyl-if]:not(basyl-if-watched)").for(y =>
         {
             let j;
             let bind = y.getAttribute("basyl-if");
@@ -1183,7 +1191,7 @@ function createBasylBinder($$)
 
     function basylScript(from)
     {
-        $$.from('*' + fromFix(from) + BASYL_SCRIPT).for(y =>
+        $$.from('*' + from + BASYL_SCRIPT).for(y =>
         {
             eval(y.textContent);
             y.parentNode.removeChild(y);
@@ -1192,7 +1200,7 @@ function createBasylBinder($$)
 
     function basylWatch(from)
     {        
-        $$.from('*' + fromFix(from) + "[watch]:not([watched])").for(y =>
+        $$.from('*' + from + "[watch]:not([watched])").for(y =>
         {
             let watched = y.getAttribute("watch").split(" ");
             $$.from(watched).for(i =>
@@ -1209,7 +1217,7 @@ function createBasylBinder($$)
     {        
         attempt = (typeof attempt === "undefined") ? 0 : attempt;        
         
-        $$.from('*' + fromFix(from) + '[bind]:not([bound])').for((y) =>
+        $$.from('*' + from + '[bind]:not([bound])').for((y) =>
         {
             let bind = closest2(y, y.getAttribute("bind"));
             if (typeof $$.bindings[bind] === "undefined")
