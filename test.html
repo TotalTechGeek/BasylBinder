@@ -4,13 +4,12 @@
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
 <script src="basylbinder.js"></script>
 <style>
-    body{
+    body {
         padding:10px;
     }
 </style>
 
-<vars age="20" name="Jesse Daniel Mitchell" x="X"></vars>
-<pvars value="This value persists between page refreshes"></pvars>
+<vars age="20" name="Jesse Daniel Mitchell" val></vars>
 
 <h1>Demo - <v bind="name"></v></h1>
 <hr>
@@ -32,26 +31,14 @@
     Also you are {{age}} years old.
     <br><br>
     {{drink}} in the United States.
-    <br><br>
-    <hr>
-    <textarea bind="value"></textarea> <br>
-    {{value}}
     <br>
-    {{x}}
 </div>
 
 
-<select bind="x">
-    <option value="X">Lol</option>
-    <option value="Y">World</option>
-</select>
-
-
-
+<input type="checkbox" on-true="Yeet" bind="val"/>
 
 <script>
 $$.var('adjective', 'awesome')
-
 
 $$.createView('age', 'drink', i =>
 {

@@ -298,16 +298,15 @@ function createBasylBinder($$)
         // There's a small bug here I'll fix later, I need to actually check if the content-editable field is set to true.
         if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el.hasAttribute("contenteditable") || el instanceof HTMLSelectElement)
         {
-            if(!(el instanceof HTMLSelectElement))
-            {
-                // Good for most types of input...
-                el.oninput = e => updateFromInput(e, name, el, attr, get, set)
-            }
-                
             // If it's a checkbox or a file or select
             if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file") || el instanceof HTMLSelectElement)
             {
                 el.onchange = (e) => updateFromOther(e, name, el, attr, get, set)                
+            }
+            else
+            {
+                // Good for most types of input...
+                el.oninput = e => updateFromInput(e, name, el, attr, get, set)
             }
         }
 
@@ -399,7 +398,7 @@ function createBasylBinder($$)
                 }
                 else if (typeof x === "function")
                 {
-                    x();
+                    x($$.get(name));
                 }
                 else
                 {
@@ -778,53 +777,87 @@ function createBasylBinder($$)
 
         result = {}
 
-        if (x instanceof Array)
+        if (Array.isArray(x))
         {
-            result.do = (y, i) => x.map(y, i);
-            result.for = (y, i) => x.forEach(y, i);
+            result.do = func => x.map(func);
+            result.for = func => x.forEach(func);
         }
         else
         {
-            result.for = (y) =>
+            // similar to a forEach function
+            result.for = func =>
             {
-                var max = x.length;
-                for (var i = 0; i < max; i++)
+                for (let i = 0; i < x.length; i++)
                 {
-                    y(x[i], i);
+                    func(x[i], i);
                 }
             }
 
-            result.do = (y) =>
+            // similar to a map function
+            result.do = func =>
             {
-                var result = [];
-                var max = x.length;
-                for (var i = 0; i < max; i++)
+                let result = [];
+                for (let i = 0; i < x.length; i++)
                 {
-
-                    var item = y(x[i], i);
-                    if (item !== undefined && item !== null)
-                    {
-                        result.push(item);
-                    }
+                    result.push(func(x[i], i));
                 }
                 return result;
             }
+        }
 
+        // filters the data structure internally
+        result.filter = func =>
+        {
+            // converts to an array if necessary
+            result._arrayFix()
+            
+            for(let i = 0; i < x.length; i++)
+            {
+                // if it doesn't test true, remove it from the array
+                if(!func(x[i]))
+                {
+                    x.splice(i, 1)
+                }
+            }
+
+            return result
+        }
+
+        // gives the underlying variable we're processing
+        result.release = () => x
+
+        // converts node lists and similar iterable structures to an array
+        result.toArray = () => x = [...x]
+
+        // a check and then an execution of the conversion
+        result._arrayFix = () => !Array.isArray(x) && result.toArray()
+
+        // transforms the data internally
+        result.transform = func =>
+        {
+            result._arrayFix()
+
+            for(let i = 0; i < x.length; i++)
+            {
+                x[i] = func(x[i], i)
+            }
+
+            return result
         }
 
         // transposes a matrix
         result.transpose = () =>
         {
-            var transpose = (y, i) => x[i].map((y, i) => x.map(y => y[i]))
-            var cur = result.max()[0];
+            let transpose = (y, i) => x[i].map((y, i) => x.map(y => y[i]))
+            let cur = result.max()[0];
             return transpose(x, cur);
         }
 
         result.max = () =>
         {
-            var max = 0,
+            let max = 0,
                 cur = 0;
-            for (var i = 0; i < x.length; i++)
+            for (let i = 0; i < x.length; i++)
             {
                 if (x[i].length > max)
                 {
@@ -835,17 +868,15 @@ function createBasylBinder($$)
             return [cur, max];
         }
 
-        result.sum = () =>
+        result.sum = () => 
         {
-            var sum = 0;
-            x.forEach(i => sum += (parseFloat(i) || 0));
-            return sum;
+            result._arrayFix()
+            return x.concat([0]).reduce((val, sum) => (parseFloat(sum) + parseFloat(val)) || 0)
         }
 
         result.ffor = (y, z) =>
         {
-            var max = x.length;
-            for (var i = 0; i < max; i++)
+            for (let i = 0; i < x.length; i++)
             {
                 z(x[i]) && y(x[i], i);
             }
@@ -853,11 +884,10 @@ function createBasylBinder($$)
 
         result.table = function(options)
         {
-            var options = options ||
-            {}
+            if(!options) options = {}
             if (typeof options.fill === "undefined") options.fill = "";
             if (typeof options.head === "undefined") options.head = [];
-            var max = result.max()[1];
+            let max = result.max()[1];
 
             // Used to wrap the elements. with <> and </>
             function wrap(x, el)
@@ -875,7 +905,7 @@ function createBasylBinder($$)
 
             if (options.head.length)
             {
-                thead = wrap(wrap(options.head.map(i => "<th>" + i + "</th>").join(''), "tr"), "thead");
+                thead = wrap(wrap(options.head.map(i=>wrap(i, "th")).join(''), "tr"), "thead");
             }
 
             return wrap(thead + tbody, "table");
@@ -884,10 +914,9 @@ function createBasylBinder($$)
         result.fdo = (y, z) =>
         {
             var result = [];
-            var max = x.length;
-            for (var i = 0; i < max; i++)
+            for (let i = 0; i < x.length; i++)
             {
-                var item = z(x[i]) ? y(x[i], i) : null;
+                let item = z(x[i]) ? y(x[i], i) : null;
                 if (item !== undefined && item !== null)
                 {
                     result.push(item);
@@ -915,10 +944,10 @@ function createBasylBinder($$)
 
     $$._CV = function(v, g, s)
     {
-        var obj = {}
+        let obj = {}
         obj.val = (v) ? v : "";
-        var get = (g) ? g : $$.templates.getAny;
-        var set = (s) ? s : $$.templates.setAny;
+        let get = (g) ? g : $$.templates.getAny;
+        let set = (s) ? s : $$.templates.setAny;
         obj.set = (v) => set(obj, v);
         obj.get = () => get(obj);
         return obj;
@@ -927,11 +956,11 @@ function createBasylBinder($$)
     $$.dvar = function(name)
     {
         name = name.toLowerCase();
-        var obj = {
+        let obj = {
             arr: []
         }
-        var set = (obj, v, i) => obj.arr[i] = v;
-        var get = (obj, i) => obj.arr[i];
+        let set = (obj, v, i) => obj.arr[i] = v;
+        let get = (obj, i) => obj.arr[i];
         obj.set = (v, i) => set(obj, v, i);
         obj.get = (i) => get(obj, i);
         obj.count = () => obj.arr.length;
