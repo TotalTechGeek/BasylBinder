@@ -635,7 +635,9 @@ function createBasylBinder($$)
                         a[0] = y + ':' + a[0]                        
                         return func.apply(null, a);
                     }
-                    return func.apply(null, arguments)
+
+                    func.apply(null, arguments)
+                    return result
                 }
             }
 
@@ -645,121 +647,163 @@ function createBasylBinder($$)
             result.bind = localBindVariant($$.bind)
 
             // This is a mess and needs documentation.
-            result.watch = function(attr)
+            result.watch = function(name)
             {
+                let orig = name
+                let optimize = false
+                let prop = false
 
-                if (attr == "text") attr = "*textContent";
-                if (attr == "html") attr = "*innerHTML";
-                var orig = attr;
-                if (attr === "*textContent") attr = "*innerHTML";
-
-                if ((x instanceof HTMLStyleElement || x instanceof HTMLScriptElement) && attr === "*innerHTML") attr = "-html";
-
-                var optimize = false;
-                var full = false;
-                if (attr.charAt(0) == "*")
+                // creates bindings to html / text 
+                if (name == "html" || name == "text") 
+                { 
+                    name = "innerHTML";
+                    prop = optimize = true
+                } 
+                
+                // specifies that it is a property and not an attribute
+                // and also tells it to attempt to optimize it
+                if (name.charAt(0) == "*")
                 {
-                    full = true;
-                    optimize = true;
-                    attr = attr.substring(1);
-                }
-                else if (attr == "-html")
-                {
-                    full = true;
-                    attr = "innerHTML";
+                    name = name.substring(1)
+                    prop = optimize = true 
                 }
 
-                var str;
-                if (full) str = x[attr];
-                else str = (x.getAttribute(attr) || "");
-                // str = "{{Hello}}", str.match(/\{\{[A-Za-z]+(\|.+)?\}\}/g).map(i=>i.substring(2,i.length-2).split("|"))
-                var vals = (str.toString().match(/\{\{[A-Za-z0-9\-_#]+(\|[^}]+(\}[^}]+)?)*\}\}/g) || []).map(i =>
+                // if innerHTML, but a style/script, disable optimization. It doesn't always turn out correctly.
+                if(name === "innerHTML")
                 {
-                    var z = i.substring(2, i.length - 2).split("|")
-                    var val = z[0];
-                    z[0] = "";
-                    return [val.toLowerCase(), z.join("|").substring(1), escapeRegExp(i)];
+                    if (x instanceof HTMLStyleElement || x instanceof HTMLScriptElement) 
+                    {
+                        optimize = false
+                    }
+                }  
+                
+
+                // The string of data that needs to get parsed
+                let str;
+                
+                if (prop) 
+                { 
+                    // grabs the property from the element
+                    str = x[name]; 
+                }
+                else 
+                {
+                    // grabs the attribute from the element
+                    str = x.getAttribute(name) || "";
+                }
+
+                // extracts the values and their lambdas (if they exist)
+                let vals = (str.toString().match(/\{\{[A-Za-z0-9\-_#]+(\|[^}]+(\}[^}]+)?)*\}\}/g) || []).map(i =>
+                {
+                    let valsThenLambdas = i.substring(2, i.length - 2).split("|")
+                    let val = valsThenLambdas[0];
+                    valsThenLambdas[0] = "";
+                    return [val.toLowerCase(), valsThenLambdas.join("|").substring(1), escapeRegExp(i)];
                 });
 
-                var f;
+                
+                // removes duplicates
                 vals = vals.filter(v => closest2(x, v[0])).filter(onlyUnique);
-                var vals2 = vals.map(i => new RegExp(i[2], "g"));
-                var skip = false;
 
-                f = () =>
+                // creates the regular expressions
+                var regExpressions = vals.map(i => new RegExp(i[2], "g"));
+
+                let func = () =>
                 {
-                    var str2 = str.toString();
+                    let data = str.toString();
                     if (optimize)
                     {
-                        skip = true;
                         $$.from(x.childNodes).for((it, i) =>
                         {
                             if (it instanceof HTMLElement)
                             {
+                                // iterate over each of the internal elements to replace values and create bindings
                                 $$.from(it).watch(orig);
+
+                                // iterate over each of the attributes to replace values and create bindings
                                 $$.from(it.attributes).for(i =>
                                 {
-                                    if (vals2.some(k => i.value.match(k))) $$.from(it).watch(i.name);
-                                });
+                                    if (regExpressions.some(k => i.value.match(k))) $$.from(it).watch(i.name);
+                                })
                             }
                             else if (it instanceof Text)
                             {
-                                str2 = it.data;
+                                data = it.data;
 
-                                if (str2.trim() !== "")
+                                if (data.trim() !== "")
                                 {
-                                    vals2.forEach((j, i) =>
+                                    regExpressions.forEach((j, i) =>
                                     {
-                                        var nam = closest2(x, vals[i][0]);
+                                        // finds the closest binding (if in a localScope)
+                                        let bound = closest2(x, vals[i][0]);
 
-                                        // Hackish solution - Todo: Add a developer notification to ask them to create a new view themselves.
+                                        // Generates random string bindings for the lambdas, to make it easier.
                                         if (vals[i][1] !== "")
                                         {
-                                            nam = $$._randStr();
-                                            $$.createView(vals[i][0], nam, new Function(vals[i][0], "return " + htmlDecode(vals[i][1])));
+                                            // generates a bound name
+                                            bound = $$._randStr() + $$._randStr();
+
+                                            // creates the binding for the lambda
+                                            $$.createView(vals[i][0], bound, new Function(vals[i][0], "return " + htmlDecode(vals[i][1])));
                                         }
-                                        var extra = (orig === "*innerHTML") ? 'bind-to="innerHTML"' : '';
-                                        str2 = str2.replace(j, '<v bind="' + nam + '"' + extra + '></v>');
-                                    });
-                                    // console.log(str2);
-                                    it.parentNode.replaceChild(new DOMParser().parseFromString("<v>" + str2 + "</v>", "text/html").childNodes[0].childNodes[1].childNodes[0], it);
+                                        
+                                        // sets the binding type (html vs text)
+                                        let bindType = (orig == "*innerHTML" || orig == "html") ? 'bind-to="innerHTML"' : '';
+                                        
+                                        // add a bound element to the html
+                                        data = data.replace(j, '<v bind="' + bound + '"' + bindType + '></v>');
+                                    })
+
+                                    // insert the bound elements
+                                    it.parentNode.replaceChild(new DOMParser().parseFromString("<v>" + data + "</v>", "text/html").childNodes[0].childNodes[1].childNodes[0], it);
                                 }
                             }
                         });
                     }
                     else
                     {
-
-                        vals2.forEach((j, i) =>
+                        // If un-optimized, it just updates the entire attribute by replacing parts of the string
+                        regExpressions.forEach((j, i) =>
                         {
+                            // if there is lambda code, 
                             if (vals[i][1] !== "")
                             {
-                                var lam = new Function(vals[i][0], "return " + vals[i][1]);
-                                str2 = str2.replace(j, lam($$(x).get(vals[i][0])));
+                                // create the lambda
+                                let lam = new Function(vals[i][0], "return " + vals[i][1]);
+                                
+                                // replace the bound variables with the data (after parsing it with the lambda)
+                                data = data.replace(j, lam($$(x).get(vals[i][0])));
                             }
                             else
                             {
-                                str2 = str2.replace(j, $$(x).get(vals[i][0]));
+                                // replace the bound variables                                
+                                data = data.replace(j, $$(x).get(vals[i][0]));
                             }
                         })
-                    }
-                    if (!skip)
-                    {
-                        if (full)
-                            x[attr] = str2;
+
+                        if (prop)
+                        {
+                            x[name] = data;                        
+                        }
                         else
-                            x.setAttribute(attr, str2);
+                        {
+                            x.setAttribute(name, data);                        
+                        }
                     }
+
+                       
+                    
                 }
 
-                vals.forEach((i, ind) =>
-                {
-                    i = i[0];
-                    if (!optimize)
-                        $$.bind(closest2(x, i), f);
-                });
 
-                f();
+                // for the non-optimized values, create the binding function 
+                vals.forEach(i =>
+                {
+                    if (!optimize)
+                        $$.bind(closest2(x, i[0]), func);
+                })
+
+                func();
             }
 
             result.get = function(z)
@@ -769,7 +813,8 @@ function createBasylBinder($$)
 
             result.set = function(z, v)
             {
-                return $$.set(closest2(x, z), v);
+                $$.set(closest2(x, z), v);
+                return result
             }
 
             return result;
