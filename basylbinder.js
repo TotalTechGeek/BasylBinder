@@ -1224,7 +1224,7 @@ function createBasylBinder($$)
             {
                 attempt++;
                 if (attempt < 4)
-                    setTimeout(() => $$.basylBind(from, attempt), attempt * 200);
+                    setTimeout(() => basylBind(from, attempt), attempt * 200);
                 return;
             }
 
