@@ -35,9 +35,9 @@ else
 function createBasylBinder($$)
 {
     $$.bindings = {}
-    $$.bindUpdates = {}
-    $$.updates = {}
     $$.components = {}
+    let bindUpdates = {}
+    let updates = {}
     let forceUpdate = 0;
 
     // used to make duplicates or to simply
@@ -66,15 +66,15 @@ function createBasylBinder($$)
      */
     $$.queueUpdate = function(name, time)
     {
-        if (typeof $$.updates[name] !== "undefined")
+        if (typeof updates[name] !== "undefined")
         {
-            clearTimeout($$.updates[name]);
+            clearTimeout(updates[name]);
         }
 
-        $$.updates[name] = setTimeout(() =>
+        updates[name] = setTimeout(() =>
         {
             $$.update(name);
-            delete $$.updates[name];
+            delete updates[name];
         }, time);
     }
 
@@ -114,7 +114,7 @@ function createBasylBinder($$)
      * @param {*} el 
      * @param {*} func 
      */
-    function _bindElementFormat(el, func)
+    function bindElementFormat(el, func)
     {
         el.value = func(el.value);
         let prev = el.onchange || emptyFunction;
@@ -136,7 +136,7 @@ function createBasylBinder($$)
      * @param {*} attr 
      * @param {*} oneWay 
      */
-    function _bindElementDVar(name, el, attr, oneWay)
+    function bindElementDVar(name, el, attr, oneWay)
     {
         // Get the Bind-Index of the DVAR
         let id = $$.bindings[name][0]().count();
@@ -182,7 +182,7 @@ function createBasylBinder($$)
             el[attr] = get();
         }
 
-        _bindElementFinal(name, el, attr, get, set)
+        bindElementFinal(name, el, attr, get, set)
     }
 
     /**
@@ -194,7 +194,7 @@ function createBasylBinder($$)
      * @param {*} attr 
      * @param {*} oneWay 
      */
-    function _bindElementNormal(name, el, attr, oneWay)
+    function bindElementNormal(name, el, attr, oneWay)
     {
         if (!oneWay)
         {
@@ -203,7 +203,7 @@ function createBasylBinder($$)
             el[attr] = $$.bindings[name][0]();
         }
 
-        _bindElementFinal(name, el, attr, () => $$.get(name), val => $$.set(name, val))
+        bindElementFinal(name, el, attr, () => $$.get(name), val => $$.set(name, val))
     }
 
 
@@ -301,7 +301,7 @@ function createBasylBinder($$)
      * @param {*} get 
      * @param {*} set 
      */
-    function _bindElementFinal(name, el, attr, get, set)
+    function bindElementFinal(name, el, attr, get, set)
     {
         // If it's some sort of editable field
         // There's a small bug here I'll fix later, I need to actually check if the content-editable field is set to true.
@@ -310,7 +310,7 @@ function createBasylBinder($$)
             // If it's a checkbox or a file or select
             if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file") || el instanceof HTMLSelectElement)
             {
-                el.onchange = (e) => updateFromOther(e, name, el, attr, get, set)                
+                el.onchange = e => updateFromOther(e, name, el, attr, get, set)                
             }
             else
             {
@@ -330,7 +330,7 @@ function createBasylBinder($$)
      * @param {*} attr 
      * @param {*} oneWay 
      */
-    function _bindElement(name, el, attr, oneWay)
+    function bindElement(name, el, attr, oneWay)
     {
         oneWay = (typeof oneWay === "undefined") ? false : oneWay;
         name = closest2(el, name);
@@ -342,11 +342,11 @@ function createBasylBinder($$)
             // This code is for d-vars, and needs major refactoring.
             if ($$.bindings[name].length == 4 && $$.bindings[name][3] == "Array")
             {
-                _bindElementDVar(name, el, attr, oneWay)
+                bindElementDVar(name, el, attr, oneWay)
             }
             else
             {
-                _bindElementNormal(name, el, attr, oneWay)
+                bindElementNormal(name, el, attr, oneWay)
             }
 
         }
@@ -365,7 +365,7 @@ function createBasylBinder($$)
         name = name.toLowerCase()
         getter = getter || emptyFunction;
         setter = setter || emptyFunction;
-        $$.bindUpdates[name] = false;
+        bindUpdates[name] = false;
         $$.bindings[name] = [getter, setter, []];
         return $$;
     }
@@ -398,9 +398,9 @@ function createBasylBinder($$)
 
         if (typeof $$.bindings[name] !== "undefined")
         {
-            if ($$.bindUpdates[name]) return $$;
-            $$.bindUpdates[name] = true;
-            $$.bindings[name][2].forEach((x) =>
+            if (bindUpdates[name]) return $$;
+            bindUpdates[name] = true;
+            $$.bindings[name][2].forEach(x =>
             {
                 if (typeof x === "string")
                 {
@@ -416,7 +416,7 @@ function createBasylBinder($$)
                 }
             });
 
-            $$.bindUpdates[name] = false;
+            bindUpdates[name] = false;
         }
 
         return $$;
@@ -458,7 +458,7 @@ function createBasylBinder($$)
         name = name.toLowerCase();
         if (typeof $$.bindings[name] !== "undefined")
         {
-            if ($$.bindUpdates[name]) return;
+            if (bindUpdates[name]) return;
             
             // Checks if the setter exists
             if($$.bindings[name][1])
@@ -473,11 +473,6 @@ function createBasylBinder($$)
     // shim for slightly older browsers
     if (!Element.prototype.matches) {
         Element.prototype.matches = Element.prototype.msMatchesSelector;
-    }
-
-    function _fromId(x)
-    {
-        return $$.from(document.getElementById(x));
     }
 
     /**
@@ -525,21 +520,24 @@ function createBasylBinder($$)
         return retval;
     }
 
-    $$._randStr = () => Math.random().toString(36).substring(2)
+    function randStr() 
+    {
+        return Math.random().toString(36).substring(2)
+    }
 
-    function _fromInput(x)
+    function fromInput(x)
     {
         let result = {}
 
         result.bind = function(name, oneWay)
         {
-            _bindElement(name, x, "value", oneWay);
+            bindElement(name, x, "value", oneWay);
             return result;
         }
 
         result.format = function(func)
         {
-            _bindElementFormat(x, func);
+            bindElementFormat(x, func);
             return result;
         }
 
@@ -552,13 +550,13 @@ function createBasylBinder($$)
         return doc.documentElement.textContent;
     }
 
-    function _fromElement(x)
+    function fromElement(x)
     {
         let result = {}
 
         result.bind = function(name, attr, oneWay)
         {
-            _bindElement(name, x, attr, oneWay);
+            bindElement(name, x, attr, oneWay);
             return result;
         }
 
@@ -569,25 +567,16 @@ function createBasylBinder($$)
     {
         if (typeof x === "string")
         {
-            let sub = x.substring(1)
+            let sub = x.substring(1), type = x[0]
 
-            if (x.indexOf("#") === 0) 
-            {
-                return _fromId(sub);
-            }
-
-            if (x.indexOf("*") === 0)
-            {
-                return $$.from(document.querySelectorAll(sub));
-            }
-
-            if (x.indexOf("$") === 0) 
-            {
-                return $$.from(document.querySelector(sub));
-            }
+            if(type == '#') return $$.from(document.getElementById(x))
+            else if(type == '*') return $$.from(document.querySelectorAll(sub))
+            else if(type == '$') return $$.from(document.querySelector(sub))
+            else if(type == '&') return $$.from($$.search(sub))
+            else if(type == '@') return $$.from($$.search(sub).map($$.get))
         }
 
-        let result;
+        let result = {};
 
         if (x instanceof HTMLElement)
         {
@@ -603,10 +592,12 @@ function createBasylBinder($$)
 
             if (x instanceof HTMLInputElement)
             {
-                result = _fromInput(x);
+                result = fromInput(x);
             }
-            else result = _fromElement(x);
-
+            else 
+            {
+                result = fromElement(x);
+            }
             
             /**
              * Used to create the local-bind variants of each of the
@@ -733,7 +724,7 @@ function createBasylBinder($$)
                                         if (vals[i][1] !== "")
                                         {
                                             // generates a bound name
-                                            bound = $$._randStr() + $$._randStr();
+                                            bound = randStr() + randStr();
 
                                             // creates the binding for the lambda
                                             $$.createView(vals[i][0], bound, new Function(vals[i][0], "return " + htmlDecode(vals[i][1])));
@@ -782,9 +773,6 @@ function createBasylBinder($$)
                             x.setAttribute(name, data);                        
                         }
                     }
-
-                       
-                    
                 }
 
 
@@ -811,8 +799,6 @@ function createBasylBinder($$)
 
             return result;
         }
-
-        result = {}
 
         if (Array.isArray(x))
         {
@@ -886,11 +872,11 @@ function createBasylBinder($$)
         result.transpose = () =>
         {
             let transpose = (y, i) => x[i].map((y, i) => x.map(y => y[i]))
-            let cur = result.max()[0];
+            let cur = depth()[0];
             return transpose(x, cur);
         }
 
-        result.max = () =>
+        function depth() 
         {
             let max = 0,
                 cur = 0;
@@ -924,7 +910,7 @@ function createBasylBinder($$)
             if(!options) options = {}
             if (typeof options.fill === "undefined") options.fill = "";
             if (typeof options.head === "undefined") options.head = [];
-            let max = result.max()[1];
+            let max = depth()[1];
 
             // Used to wrap the elements. with <> and </>
             function wrap(x, el)
@@ -1065,7 +1051,7 @@ function createBasylBinder($$)
         {
             if (i.getAttribute(LOCAL_BIND_ID) === "")
             {
-                i.setAttribute(LOCAL_BIND_ID, $$._randStr());
+                i.setAttribute(LOCAL_BIND_ID, randStr());
             }
         });
     }
@@ -1237,32 +1223,39 @@ function createBasylBinder($$)
             {
                 if(y instanceof HTMLInputElement)
                 {
+                    // if it's an input element
                     if (typeof y.attributes["type"] === "object" && y.getAttribute("type") === "checkbox")
                     {
+                        // if it's a checkbox, bind to checked                        
                         bindTo = "checked"
                     }
                     else
                     {
+                        // otherwise bind to value
                         bindTo = "value"
                     }
                 } 
                 else if (y instanceof HTMLTextAreaElement || y instanceof HTMLSelectElement)
                 {
+                    // if it's a select or text area, bind to value
                     bindTo = "value"
                 }
                 else
                 {
+                    // otherwise, bind to text content
                     bindTo = "textContent"
                 } 
             }
             else
             {
+                // if there's a bind-to tag, bind-to it.
                 bindTo = y.getAttribute("bind-to")
             }
             
             y.setAttribute("bound", bind);
             y.removeAttribute("bind");
-            _bindElement(bind, y, bindTo, oneWay);
+
+            bindElement(bind, y, bindTo, oneWay);
         });
 
     }
