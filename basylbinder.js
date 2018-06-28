@@ -1286,3 +1286,6 @@ function createBasylBinder($$)
 }
 
 createBasylBinder($$);
+
+// automatically executes $$.all on load.
+addEventListener("load", () => $$.all())
