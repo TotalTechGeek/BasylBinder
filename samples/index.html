@@ -31,7 +31,7 @@
         $$.var('url', 'http://totaltechgeek.github.io/BasylBinder/samples')
         
         $$.all()
-        $$.from([{ example: 'hello', text: 'Hello Name'}, {example: 'local', text: 'Local Binds'}, { example: 'calc', text: "Component Sum Example"}, { example: 'people', text: 'People Component Example'}, { example: 'score', text: 'Score Example'}]).for(i =>
+        $$.from([{ example: 'hello', text: 'Hello Name'}, {example: 'local', text: 'Local Binds'}, { example: 'calc', text: "Component Sum Example"}, { example: 'people', text: 'People Component Example'}, { example: 'score', text: 'Score Example'}, { example: 'Todo', text: 'Todo Example' }]).for(i =>
         {
             $$.make('link', i).appendTo(links)
         })

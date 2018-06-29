@@ -84,17 +84,16 @@ function createBasylBinder($$)
     function htmlToElement(html) 
     {
         html = html.trim(); 
-        let template 
-
+        let template = document.createElement('template');
+        
         // Silly shim for IE11, since that's still around :/
-        if(!(window.ActiveXObject) && "ActiveXObject" in window)
+        if (!template.content)
         {
             template = document.createElement('div')
             template.innerHTML = html;
             return template.childNodes[0]
         }
         
-        template = document.createElement('template');
         template.innerHTML = html;
         return template.content.firstChild;
     }
