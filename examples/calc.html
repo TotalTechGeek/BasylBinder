@@ -1,0 +1,52 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<script src="../basylbinder.js"></script>
+<style>
+    body {
+        padding:10px;
+    }
+</style>
+
+<!-- A component that has a row -->
+<component type="row" make>
+    <input bind="amt" type="number" /> <br>
+    <script type="basyl-script">
+        // Binds the amt to the total. (Tells total to update when this updates)
+        $$.from(me).bind('amt', 'total')
+    </script>
+</component>
+
+
+<div id="rows"></div>
+
+<div watch="text">
+    <b>Total: {{total}}</b><br>
+    <b>Count: {{count}}</b>
+</div>
+
+<br>
+
+<button onclick="addRow()">Add Row</button>
+
+<script>
+    $$.create('total', () => $$.from('@amt').sum())
+    $$.var('count', 0)
+    
+    // this next line grabs all components and variables
+    // and creates bindings for them. 
+
+    // You will sometimes need to call this manually when doing 
+    // fancier stuff with the library, like creating variables 
+    // from the JS
+    $$.all() 
+
+    function addRow()
+    {
+        let rows = document.getElementById('rows')
+        $$.make('row', { amt: 0 }).appendTo(rows)
+        $$.set('count', $$.get('count') + 1)
+    }  
+
+    addRow()
+</script>
+
+</body>

@@ -51,7 +51,7 @@ function createBasylBinder($$)
 
     const LOCAL_BIND_ID = "local-bind";
     const BASYL_VARS = "vars";
-    const BASYL_SCRIPT = "basyl-script";
+    const BASYL_SCRIPT = 'script[type="basyl-script"]';
     const BASYL_DVARS = "dvars";
     const BASYL_PVARS = "pvars";
     const BASYL_SVARS = "svars";
@@ -79,12 +79,59 @@ function createBasylBinder($$)
     }
 
     /**
+     * Used to create a component to append to the body
+     * @param {*} html HTML String - Be careful, this is not escaped.
+     */
+    function htmlToElement(html) 
+    {
+        var template = document.createElement('template');
+        html = html.trim(); 
+        template.innerHTML = html;
+        return template.content.firstChild;
+    }
+
+
+    /**
+     * Used to make a component. 
+     * @param {String} type The component type.
+     * @param {Object} vars The variables to load into the component.
+     */
+    $$.make = function(type, vars)
+    {
+        let varTag = ''
+        if(vars)
+        {
+            varTag = '<vars '
+
+            Object.keys(vars).forEach(i=>
+            {
+                varTag += i.replace(/ /g, '') + '="' + vars[i] + '"'
+            })
+
+            varTag += '></vars>'
+        }
+        
+        return { 
+            appendTo: (el) => 
+            {
+                let el2 = htmlToElement(`<component type="${type}" from>` + varTag +  `</component>`)
+                el.setAttribute('basyl-now', '')
+                el.appendChild(el2)
+                $$.all('[basyl-now]')
+                el.removeAttribute('basyl-now')
+                return $$.from(el2)
+            }
+        }
+    }
+
+    /**
      * Binds a variable to another variable, or a variable to a function.
      * @param {*} name 
      * @param {*} n 
      */
     $$.bind = function(name, n)
     {
+        htmlvars(' ')
         name = name.toLowerCase()
         if (typeof n === "string") n = n.toLowerCase()
         if (typeof $$.bindings[name] !== "undefined")
@@ -959,7 +1006,7 @@ function createBasylBinder($$)
             return x < 0 ? -x : x || 0
         },
         getFloat: (v) => parseFloat(v.val) || 0,
-        getAny: (v) => v.val || "",
+        getAny: (v) => typeof v.val !== "undefined" ? v.val : "",
         setInt: (t, v) => t.val = parseInt(v),
         setFloat: (t, v) => t.val = parseFloat(v),
         setAny: (t, v) => t.val = v
@@ -968,7 +1015,7 @@ function createBasylBinder($$)
     $$._CV = function(v, g, s)
     {
         let obj = {}
-        obj.val = v ? v : "";
+        obj.val = typeof v !== "undefined" ? v : "";
         let get = g ? g : $$.templates.getAny;
         let set = s ? s : $$.templates.setAny;
         obj.set = v => set(obj, v);
@@ -1179,7 +1226,7 @@ function createBasylBinder($$)
     {
         $$.from('*' + from + BASYL_SCRIPT).for(y =>
         {
-            eval(y.textContent);
+            new Function('me', y.textContent)(y)
             y.parentNode.removeChild(y);
         });
     }
@@ -1278,9 +1325,9 @@ function createBasylBinder($$)
 
         htmlvars(from)
 
+        basylScript(from)        
         basylWatch(from)
         basylBind(from)
-        basylScript(from)
         basylIf(from)
     }
 }
