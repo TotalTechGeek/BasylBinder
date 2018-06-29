@@ -60,7 +60,7 @@ The node build tools are optional, and bundled in to make it easier to make lice
 
 ## Examples
 
-[Here](http://jessemitchell.me/BasylBinder/examples/index.html)
+[Here](http://jessemitchell.me/BasylBinder/samples/index.html)
 
 ## Todo:
 
