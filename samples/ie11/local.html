@@ -1,0 +1,74 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<script src="../../build/basylbinder-es5.min.js"></script>
+<style>
+    body {
+        padding:10px;
+    }
+</style>
+
+
+<script>
+    function alertName(el)
+    {
+        alert($$.from(el).get('name'))
+    }
+</script>
+
+<h1>Local Bind Example</h1>
+<hr>
+
+
+<vars canoverride="Outer"></vars>
+
+<!-- Local Binds are like a super lightweight component -->
+<!-- If you have an existing template engine, it's really easy to use this instead of writing component code -->
+
+<!-- Just specify "local-bind" -->
+<div local-bind>
+    <!-- Put in some variables -->
+    <vars name="Richard"></vars>
+    <input bind="name"/>
+    Hi <v bind="name"></v> 
+    
+    <br>
+    You are <v bind="age"></v>
+
+    <!-- Basyl-Scripts give you a variable called 'me' that allow you to get the scope of the object you're in -->
+    <script type="basyl-script">
+        me.var('age', 21)
+    </script>
+
+    <br>
+    This shows how values can trickle down from outer scopes: <v bind="canoverride"></v>
+
+    <br>
+    <!-- This shows that the same function can be used in multiple components, by using $$.from -->
+    <button class="btn" onclick="alertName(this)">Alert Name</button>
+</div>
+
+<hr>
+
+<!-- This is a different local-bind with entirely different variables -->
+<div local-bind>
+    <vars name="Erlich"></vars>
+    <input bind="name"/>
+    Hello <v bind="name"></v>
+
+    <script type="basyl-script">
+        me.var('canoverride', 'Inner')
+        me.var('age', 27)
+    </script>
+    
+    <br>
+    Unlike the other guy, you are <span watch="text">{{age}}</span>
+    <br>
+    
+    This shows how variables are overridden at deeper scopes: <v bind="canoverride"></v>
+    <br>
+    <button class="btn" onclick="alertName(this)">Alert Name</button>
+</div>
+
+
+
+
+</body>

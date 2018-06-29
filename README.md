@@ -1,6 +1,6 @@
 # BasylBinder
 
-A small, fast and efficient MVC Framework, built for speeding up development, in just about 4.2KB (minified + gzipped).
+A small, fast and efficient MVC Framework, built for speeding up development, in just under 4KB (minified + gzipped).
 
 It supports lightweight components, live and dynamic variable bindings, persisted variables, and other features you need to build single (and multi) page applications. 
 
@@ -8,7 +8,7 @@ It supports lightweight components, live and dynamic variable bindings, persiste
 
 Have you ever wanted to start work on a new idea, but wanted to avoid bloating your new project with hundreds of kilobytes in dependencies, and developing hours of skeleton code just to get started? 
 
-BasylBinder is a standalone web framework that currently clocks in at just about 4.2KB, and avoids all the hassle of larger MVC frameworks.
+BasylBinder is a standalone web framework that currently clocks in at just under 4KB, and avoids all the hassle of larger MVC frameworks.
 
 A simple "Hello name" looks like:
 

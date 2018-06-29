@@ -1,0 +1,36 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<script src="../../build/basylbinder-es5.min.js"></script>
+<style>
+    body {
+        padding:10px;
+    }
+</style>
+
+
+<body>
+    <!-- I don't plan to maintain the IE11 examples, they're just for the developers on older browsers -->
+    <!-- To prove that it'll work if they need to support it -->
+    
+    <h1>Examples</h1>
+    <hr>
+
+    <component make type="link">
+        <a href="{{url}}/{{example}}.html">{{text}}</a><br>
+    </component>
+
+
+
+    <div id="links"></div>
+
+    <script>
+        let links = document.getElementById('links')
+        $$.var('url', 'http://totaltechgeek.github.io/BasylBinder/samples/ie11')
+        
+        $$.all()
+        $$.from([{ example: 'hello', text: 'Hello Name'}, {example: 'local', text: 'Local Binds'}, { example: 'calc', text: "Component Sum Example"}, { example: 'people', text: 'People Component Example'}, { example: 'score', text: 'Score Example'}]).for(function(i)
+        {
+            $$.make('link', i).appendTo(links)
+        })
+    </script>
+
+</body>

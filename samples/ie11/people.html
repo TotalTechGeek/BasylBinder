@@ -1,0 +1,72 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<script src="../../build/basylbinder-es5.min.js"></script>
+<style>
+    body {
+        padding:10px;
+    }
+</style>
+
+
+<h1>People Example</h1>
+<hr>
+
+<!-- A component that has a row -->
+<component type="person" make>
+    <input bind="first" placeholder="First" /> <input bind="last" placeholder="Last" /> <input type="number" bind="age" placeholder="Age" /> 
+    <button class="btn" onclick="erase(this)">Erase</button>
+    <br>
+    <script type="basyl-script">
+        me.create('person', function() { return grab(me, ['first', 'last', 'age']) })
+        me.release().parentNode.querySelector('input').focus()
+        bind(me, ['first', 'last', 'age'], 'people')
+    </script>
+</component>
+
+<div id="people"></div>
+
+<br>
+
+<button class="btn" onclick="addPerson()">Add Person</button>
+
+<br>
+
+<span bind="peopleJSON"></span>
+
+
+<script>
+    function addPerson()
+    {
+        let people = document.getElementById('people')
+        $$.make('person', { first: '', last: '', age: '' }).appendTo(people)
+    }
+
+    function grab(me, arr)
+    {
+        let obj = {}
+        arr.forEach(function(i) { return obj[i] = me.get(i) })
+        obj.age = parseInt(obj.age)
+        return obj
+    }
+
+    function bind(me, arr, to)
+    {
+        arr.forEach(function(i) { return me.bind(i, to) })
+        me.update(to)
+    }
+
+    function erase(el)
+    {
+        el = el.parentNode
+        el.parentNode.removeChild(el)
+        $$.update('people')
+    }
+
+    $$.create('people', function() { return $$.from('*component[type="person"]').transform($$.from).do(function(i) { return i.get('person') }) })
+    
+    // This isn't totally optimal, 
+    // as the code currently does update this every time a single person is modified
+    // but this is fine for most use-cases
+    $$.createView('people', 'peopleJSON', JSON.stringify)
+</script>
+
+</body>

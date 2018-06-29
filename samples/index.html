@@ -8,13 +8,21 @@
 
 
 <body>
-    
+    <vars hide></vars>
     <h1>Examples</h1>
     <hr>
 
-    <component make type="link">
+
+
+    <component make type="link" style="display: none">
         <a href="{{url}}/{{example}}.html">{{text}}</a><br>
     </component>
+
+    
+    <v basyl-if="hide">
+        You either don't have JavaScript enabled, or you're running IE11.
+        If it's the latter, try <a href='http://totaltechgeek.github.io/BasylBinder/samples/ie11/index.html'>our examples here</a>.
+    </v>
 
     <div id="links"></div>
 
@@ -23,7 +31,7 @@
         $$.var('url', 'http://totaltechgeek.github.io/BasylBinder/samples')
         
         $$.all()
-        $$.from([{ example: 'hello', text: 'Hello Name'}, {example: 'local', text: 'Local Binds'}, { example: 'calc', text: "Component Sum Example"}]).for(i =>
+        $$.from([{ example: 'hello', text: 'Hello Name'}, {example: 'local', text: 'Local Binds'}, { example: 'calc', text: "Component Sum Example"}, { example: 'people', text: 'People Component Example'}, { example: 'score', text: 'Score Example'}]).for(i =>
         {
             $$.make('link', i).appendTo(links)
         })

@@ -1,0 +1,45 @@
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+<script src="../basylbinder.js"></script>
+<style>
+    body {
+        padding:10px;
+    }
+</style>
+
+<h1>Score Example</h1>
+<hr>
+
+<component type="check" make>
+    <input bind="score" on-true="{{val}}" type="checkbox"> <label>{{text}}</label>
+    <br>
+    <script type="basyl-script">
+        me.bind('score', 'sum')
+    </script>
+</component>
+
+<div id="checks"></div>
+
+<br>
+
+Score: <v bind="sum"></v>
+
+
+<script>
+    // The framework used to support a feature called "dvars" which were technically better
+    // for this type of situation, however, I believed it added unnecessary complexity.
+    // using the components is easy enough to manage. 
+    $$.create('sum', () => $$.from('@score').filter(i=>i).sum())
+    $$.all()
+
+    function addScores(x)
+    {
+        x.forEach(i=>
+        {
+            $$.make('check', { score: '', val: i[1], text: i[0] }).appendTo(document.getElementById('checks'))
+        })
+    }
+
+    addScores("Wins Games (1)|1,Programs (2)|2,Has Fun (3)|3,Eats (-1)|-1,+5|5".split(',').map(i=>i.split('|')))
+</script>
+
+</body>

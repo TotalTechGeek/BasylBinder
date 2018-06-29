@@ -52,7 +52,6 @@ function createBasylBinder($$)
     const LOCAL_BIND_ID = "local-bind";
     const BASYL_VARS = "vars";
     const BASYL_SCRIPT = 'script[type="basyl-script"]';
-    const BASYL_DVARS = "dvars";
     const BASYL_PVARS = "pvars";
     const BASYL_SVARS = "svars";
     const BASYL_PVAR_PREFIX = 'bb_';
@@ -84,8 +83,18 @@ function createBasylBinder($$)
      */
     function htmlToElement(html) 
     {
-        var template = document.createElement('template');
         html = html.trim(); 
+        let template 
+
+        // Silly shim for IE11, since that's still around :/
+        if(!(window.ActiveXObject) && "ActiveXObject" in window)
+        {
+            template = document.createElement('div')
+            template.innerHTML = html;
+            return template.childNodes[0]
+        }
+        
+        template = document.createElement('template');
         template.innerHTML = html;
         return template.content.firstChild;
     }
@@ -172,64 +181,6 @@ function createBasylBinder($$)
             el.oninput && el.oninput(e);
         }
         return $$;
-    }
-
-    /**
-     * Binds an element to a dvar, used internally.
-     * Do not call directly. 
-     * 
-     * @param {*} name 
-     * @param {*} el 
-     * @param {*} attr 
-     * @param {*} oneWay 
-     */
-    function bindElementDVar(name, el, attr, oneWay)
-    {
-        // Get the Bind-Index of the DVAR
-        let id = $$.bindings[name][0]().count();
-
-        let get = () => $$.bindings[name][0]().get(id)
-        let set = val =>
-        {
-            $$.bindings[name][0]().set(val, id)
-            $$.update(name)
-        }
-
-        if (typeof el.attributes["bind-index"] !== "undefined")
-        {
-            // If it has a bind index defined, set it to that location.
-            id = (el.getAttribute("bind-index"));
-            if (typeof get() === "undefined") set("");
-        }
-        else
-        {
-            // Generate a bind index.
-            while (typeof get() !== "undefined") id++;
-            el.setAttribute("bind-index", id);
-            set("")
-        }
-
-        if (!oneWay)
-        {
-
-            let updateMethod = function()
-            {
-                el[attr] = get()
-
-                // Tells the code to delete this update function
-                // if this element ceases to exist.
-                if (!el.parentNode)
-                {
-                    let z = $$.bindings[name][2].indexOf(updateMethod);
-                    $$.bindings[name][2].splice(z, 1);
-                }
-            }
-
-            $$.bindings[name][2].push(updateMethod);
-            el[attr] = get();
-        }
-
-        bindElementFinal(name, el, attr, get, set)
     }
 
     /**
@@ -336,8 +287,6 @@ function createBasylBinder($$)
         }
     }
 
-
-
     /**
      * Final step in binding an element to a variable.
      * Used internally.
@@ -357,7 +306,7 @@ function createBasylBinder($$)
             // If it's a checkbox or a file or select
             if (el.attributes["type"] && (el.getAttribute("type") === "checkbox" || el.getAttribute("type") === "file") || el instanceof HTMLSelectElement)
             {
-                el.onchange = e => updateFromOther(e, name, el, attr, get, set)                
+                el.onchange = e => updateFromOther(e, name, el, attr, get, set)
             }
             else
             {
@@ -385,17 +334,7 @@ function createBasylBinder($$)
         // Checks if the binding exists, and the element we're binding to exists.
         if (typeof $$.bindings[name] !== "undefined" && typeof el !== "undefined")
         {
-
-            // This code is for d-vars, and needs major refactoring.
-            if ($$.bindings[name].length == 4 && $$.bindings[name][3] == "Array")
-            {
-                bindElementDVar(name, el, attr, oneWay)
-            }
-            else
-            {
-                bindElementNormal(name, el, attr, oneWay)
-            }
-
+            bindElementNormal(name, el, attr, oneWay)
         }
         return $$;
     }
@@ -467,19 +406,6 @@ function createBasylBinder($$)
         }
 
         return $$;
-    }
-
-    /**
-     * Gets a dynamic variable.
-     * @param {*} name 
-     */
-    $$.dget = function(name)
-    {
-        name = name.toLowerCase()
-        if (typeof $$.bindings[name] !== "undefined")
-        {
-            return $$.get(name).arr;
-        }
     }
 
     /**
@@ -572,42 +498,10 @@ function createBasylBinder($$)
         return Math.random().toString(36).substring(2)
     }
 
-    function fromInput(x)
-    {
-        let result = {}
-
-        result.bind = function(name, oneWay)
-        {
-            bindElement(name, x, "value", oneWay);
-            return result;
-        }
-
-        result.format = function(func)
-        {
-            bindElementFormat(x, func);
-            return result;
-        }
-
-        return result;
-    }
-
     function htmlDecode(input)
     {
         let doc = new DOMParser().parseFromString(input, "text/html");
         return doc.documentElement.textContent;
-    }
-
-    function fromElement(x)
-    {
-        let result = {}
-
-        result.bind = function(name, attr, oneWay)
-        {
-            bindElement(name, x, attr, oneWay);
-            return result;
-        }
-
-        return result;
     }
 
     $$.from = function(x)
@@ -625,6 +519,9 @@ function createBasylBinder($$)
 
         let result = {};
 
+        // gives the underlying variable we're processing
+        result.release = () => x
+
         if (x instanceof HTMLElement)
         {
             function escapeRegExp(str)
@@ -639,11 +536,25 @@ function createBasylBinder($$)
 
             if (x instanceof HTMLInputElement)
             {
-                result = fromInput(x);
+                result.bind = function(name, oneWay)
+                {
+                    bindElement(name, x, "value", oneWay);
+                    return result;
+                }
+        
+                result.format = function(func)
+                {
+                    bindElementFormat(x, func);
+                    return result;
+                }
             }
             else 
             {
-                result = fromElement(x);
+                result.bind = function(name, attr, oneWay)
+                {
+                    bindElement(name, x, attr, oneWay);
+                    return result;
+                }
             }
             
             /**
@@ -671,9 +582,9 @@ function createBasylBinder($$)
                 }
             }
 
+            result.create = localBindVariant($$.create, [0])
             result.var = localBindVariant($$.var, [0])
             result.const = localBindVariant($$.const, [0])
-            result.dvar = localBindVariant($$.dvar, [0])
             result.bind = localBindVariant($$.bind, [0])
             result.createView = localBindVariant($$.createView, [0, 1])
 
@@ -839,6 +750,12 @@ function createBasylBinder($$)
                 return $$.get(closest2(x, z));
             }
 
+            result.update = function(z)
+            {
+                $$.update(closest2(x, z))
+                return result
+            }
+
             result.set = function(z, v)
             {
                 $$.set(closest2(x, z), v);
@@ -888,14 +805,12 @@ function createBasylBinder($$)
                 if(!func(x[i]))
                 {
                     x.splice(i, 1)
+                    i-- 
                 }
             }
 
             return result
         }
-
-        // gives the underlying variable we're processing
-        result.release = () => x
 
         // converts node lists and similar iterable structures to an array
         result.toArray = () => x = _toConsArray(x)
@@ -1024,22 +939,6 @@ function createBasylBinder($$)
         return obj;
     }
 
-    $$.dvar = function(name)
-    {
-        name = name.toLowerCase();
-        let obj = {
-            arr: []
-        }
-        let set = (obj, v, i) => obj.arr[i] = v;
-        let get = (obj, i) => obj.arr[i];
-        obj.set = (v, i) => set(obj, v, i);
-        obj.get = i => get(obj, i);
-        obj.count = () => obj.arr.length;
-        $$.create(name, () => obj);
-        $$.bindings[name].push("Array");
-        return $$;
-    }
-
     $$.search = function(name)
     {
         return Object.keys($$.bindings).filter(i => i.match(name));
@@ -1137,7 +1036,6 @@ function createBasylBinder($$)
         
         varSetup(BASYL_VARS, 'var')
         varSetup(BASYL_SVARS, 'const')
-        varSetup(BASYL_DVARS, 'dvar')        
 
         $$.from('*' + from + BASYL_PVARS).for(el =>
         {
@@ -1161,7 +1059,6 @@ function createBasylBinder($$)
             y.parentNode.removeChild(y);
         });
     }
-
 
     /**
      * Creates the component templates.
@@ -1228,7 +1125,7 @@ function createBasylBinder($$)
         $$.from('*' + from + BASYL_SCRIPT).for(y =>
         {
             new Function('me', y.textContent)($$.from(y))
-            y.parentNode.removeChild(y);
+            y.innerHTML = ''
         });
     }
 
