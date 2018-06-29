@@ -1,5 +1,21 @@
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
 <script src="../basylbinder.js"></script>
+<script>
+    function addTodo(el)
+    {
+        $$.make('todo-item', { checked: '', text: $$.from(el).get('text') }).appendTo(el.parentNode.querySelector('[todos]'))
+    }
+    
+    function todoKeyDown(event)
+    {
+        if((event.which || event.keyCode) === 13)
+        {
+            addTodo(event.target)
+            $$.set('text', '')
+            event.preventDefault()
+        }
+    }
+</script>
 <style>
     body {
         padding:10px;
@@ -10,10 +26,24 @@
         color: grey;
     }
 </style>
-<vars text></vars>
 
 <component make type="todo-item">
     <input bind="checked" on-true="true" type="checkbox"/>&nbsp;<label><span class="done-{{checked}}">{{text}}</span></label><br>
+    <script type="basyl-script">
+        me.bind('checked', 'completed')
+        me.update('count').update('completed')
+    </script>
+</component>
+
+<component make type="todo">
+    <div todos></div>
+    <input id="text" bind="text" autofocus="autofocus" onkeydown="todoKeyDown(event)"/> <button class="btn" onclick="addTodo(this)">Add</button>
+    <script type="basyl-script">
+        me.create('completed', () => me.from('@checked').transform(i => i ? 1 : 0).sum())
+        me.create('count', () => me.from('@checked').release().length)
+    </script>
+    <br>
+    {{completed}} out of {{count}} task{{count|count==1?'':'s'}} completed.    
 </component>
 
 <h1>Todo Example</h1>
@@ -21,26 +51,8 @@
 
 <br>
 
-<div id="todos"></div>
-<input id="text" bind="text" autofocus="autofocus" onkeydown="todoKeyDown(event)"/> <button class="btn" onclick="addTodo()">Add</button>
-
-<script>
-    let todos = document.getElementById('todos')
-    
-    function addTodo()
-    {
-        $$.make('todo-item', { checked: '', text: $$.get('text') }).appendTo(todos)
-    }
-
-    function todoKeyDown(event)
-    {
-        if((event.which || event.keyCode) === 13)
-        {
-            addTodo()
-            $$.set('text', '')
-            event.preventDefault()
-        }
-    }
-</script>
+<component from type="todo">
+    <vars text></vars>
+</component>
 
 </body>

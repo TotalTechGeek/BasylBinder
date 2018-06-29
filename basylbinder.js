@@ -509,7 +509,7 @@ function createBasylBinder($$)
         {
             let sub = x.substring(1), type = x[0]
 
-            if(type == '#') return $$.from(document.getElementById(x))
+            if(type == '#') return $$.from(document.getElementById(sub))
             else if(type == '*') return $$.from(document.querySelectorAll(sub))
             else if(type == '$') return $$.from(document.querySelector(sub))
             else if(type == '&') return $$.from($$.search(sub))
@@ -572,10 +572,21 @@ function createBasylBinder($$)
                     {
                         y = y.getAttribute(LOCAL_BIND_ID);
                         let a = _toConsArray(arguments)
-                        vars.forEach(i=>a[i] = y + ':' + a[i])
+                        vars.forEach(i=> 
+                        {
+                            if(typeof i === 'string')
+                            {
+                                a[i] = closest2(x, a[i | 0])
+                            }
+                            else if(typeof a[i] === 'string')
+                            {
+                                a[i] = y + ':' + a[i]
+                            }
+                        })
+
                         return func.apply(null, a);
                     }
-
+                    
                     func.apply(null, arguments)
                     return result
                 }
@@ -584,7 +595,7 @@ function createBasylBinder($$)
             result.create = localBindVariant($$.create, [0])
             result.var = localBindVariant($$.var, [0])
             result.const = localBindVariant($$.const, [0])
-            result.bind = localBindVariant($$.bind, [0])
+            result.bind = localBindVariant($$.bind, [0, '1'])
             result.createView = localBindVariant($$.createView, [0, 1])
 
             // This is a mess and needs documentation.
@@ -753,6 +764,20 @@ function createBasylBinder($$)
             {
                 $$.update(closest2(x, z))
                 return result
+            }
+
+            result.search = function(z)
+            {
+                return $$.search(z, x)
+            }
+
+            result.from = function(z)
+            {
+                let sub = z.substring(1), type = z[0]
+                if(type == '*') return $$.from(x.querySelectorAll(sub))
+                else if(type == '$') return $$.from(x.querySelector(sub))
+                else if(type == '&') return $$.from($$.search(sub, x))
+                else if(type == '@') return $$.from($$.search(sub, x).map($$.get))
             }
 
             result.set = function(z, v)
@@ -938,9 +963,36 @@ function createBasylBinder($$)
         return obj;
     }
 
-    $$.search = function(name)
+    $$.search = function(name, from)
     {
-        return Object.keys($$.bindings).filter(i => i.match(name));
+        let search = (name) => Object.keys($$.bindings).filter(i => i.match(name));
+
+        if(from)
+        {
+            if(typeof from === 'string')
+            {
+                return $$.search(name, document.querySelector(fromFix(from)))
+            }
+            else
+            {
+                let closest = $$.closest(from)
+                if(closest)
+                {
+                    let arr = []
+
+                    $$.from(closest.querySelectorAll('[' + LOCAL_BIND_ID + ']')).for(i=>
+                    {
+                        arr.push.apply(arr, search(i.getAttribute(LOCAL_BIND_ID) + ':' + name) || [])
+                    })
+                    
+                    arr.push.apply(arr, search(closest.getAttribute(LOCAL_BIND_ID ) + ':' + name) || [])
+
+                    return arr
+                }
+            }
+        }
+
+        return search(name)
     }
 
     // This will be fleshed out later on.
