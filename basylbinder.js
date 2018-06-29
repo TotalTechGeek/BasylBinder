@@ -652,7 +652,7 @@ function createBasylBinder($$)
              * 
              * @param {*} func 
              */
-            function localBindVariant(func)
+            function localBindVariant(func, vars)
             {
                 return function()
                 {
@@ -662,7 +662,7 @@ function createBasylBinder($$)
                     {
                         y = y.getAttribute(LOCAL_BIND_ID);
                         let a = _toConsArray(arguments)
-                        a[0] = y + ':' + a[0]                        
+                        vars.forEach(i=>a[i] = y + ':' + a[i])
                         return func.apply(null, a);
                     }
 
@@ -671,10 +671,11 @@ function createBasylBinder($$)
                 }
             }
 
-            result.var = localBindVariant($$.var)
-            result.const = localBindVariant($$.const)
-            result.dvar = localBindVariant($$.dvar)
-            result.bind = localBindVariant($$.bind)
+            result.var = localBindVariant($$.var, [0])
+            result.const = localBindVariant($$.const, [0])
+            result.dvar = localBindVariant($$.dvar, [0])
+            result.bind = localBindVariant($$.bind, [0])
+            result.createView = localBindVariant($$.createView, [0, 1])
 
             // This is a mess and needs documentation.
             result.watch = function(name)
