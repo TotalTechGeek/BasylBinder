@@ -1226,7 +1226,7 @@ function createBasylBinder($$)
     {
         $$.from('*' + from + BASYL_SCRIPT).for(y =>
         {
-            new Function('me', y.textContent)(y)
+            new Function('me', y.textContent)($$.from(y))
             y.parentNode.removeChild(y);
         });
     }

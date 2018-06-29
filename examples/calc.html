@@ -6,12 +6,17 @@
     }
 </style>
 
+
+<h1>Component Sum Example</h1>
+<hr>
+
+
 <!-- A component that has a row -->
 <component type="row" make>
     <input bind="amt" type="number" /> <br>
     <script type="basyl-script">
         // Binds the amt to the total. (Tells total to update when this updates)
-        $$.from(me).bind('amt', 'total')
+        me.bind('amt', 'total')
     </script>
 </component>
 
