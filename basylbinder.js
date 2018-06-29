@@ -574,13 +574,16 @@ function createBasylBinder($$)
                         let a = _toConsArray(arguments)
                         vars.forEach(i=> 
                         {
-                            if(typeof i === 'string')
+                            if(typeof a[i] === 'string')
                             {
-                                a[i] = closest2(x, a[i | 0])
-                            }
-                            else if(typeof a[i] === 'string')
-                            {
-                                a[i] = y + ':' + a[i]
+                                if(typeof i === 'string')
+                                {
+                                    a[i] = closest2(x, a[i | 0])
+                                }
+                                else
+                                {
+                                    a[i] = y + ':' + a[i]
+                                }
                             }
                         })
 
