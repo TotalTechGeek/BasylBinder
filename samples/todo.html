@@ -11,7 +11,7 @@
         if((event.which || event.keyCode) === 13)
         {
             addTodo(event.target)
-            $$.set('text', '')
+            $$.from(event).set('text', '')
             event.preventDefault()
         }
     }

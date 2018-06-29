@@ -10,8 +10,7 @@ if (typeof window.$$ === "undefined")
 {
     $$ = function(e)
     {
-        if (e instanceof Event) return $$.from(e.target);
-        if (e instanceof HTMLElement || typeof e === "object")
+        if (e instanceof Event ||e instanceof HTMLElement || typeof e === "object")
         {
             return $$.from(e);
         }
@@ -22,8 +21,7 @@ else
     var z = window.$$;
     $$ = function(e, x)
     {
-        if (e instanceof Event) return $$.from(e.target);
-        if (e instanceof HTMLElement || typeof e === "object")
+        if (e instanceof Event || e instanceof HTMLElement || typeof e === "object")
         {
             return $$.from(e);
         }
@@ -520,6 +518,11 @@ function createBasylBinder($$)
 
         // gives the underlying variable we're processing
         result.release = () => x
+
+        if(x instanceof Event)
+        {
+            x = x.target
+        }
 
         if (x instanceof HTMLElement)
         {
