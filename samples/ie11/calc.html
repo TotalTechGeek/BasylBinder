@@ -46,7 +46,7 @@
 
     function addRow()
     {
-        let rows = document.getElementById('rows')
+        var rows = document.getElementById('rows')
         $$.make('row', { amt: 0 }).appendTo(rows)
         $$.set('count', $$.get('count') + 1)
     }  

@@ -36,13 +36,13 @@
 <script>
     function addPerson()
     {
-        let people = document.getElementById('people')
+        var people = document.getElementById('people')
         $$.make('person', { first: '', last: '', age: '' }).appendTo(people)
     }
 
     function grab(me, arr)
     {
-        let obj = {}
+        var obj = {}
         arr.forEach(function(i) { return obj[i] = me.get(i) })
         obj.age = parseInt(obj.age)
         return obj
