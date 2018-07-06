@@ -597,7 +597,8 @@ function createBasylBinder($$)
                             }
                         })
 
-                        return func.apply(null, a);
+                        func.apply(null, a)
+                        return result
                     }
                     
                     func.apply(null, arguments)
