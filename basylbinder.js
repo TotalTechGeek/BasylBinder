@@ -60,7 +60,7 @@ function createBasylBinder($$)
      * @param {*} name 
      * @param {*} time 
      */
-    $$.queueUpdate = function(name, time)
+    $$.queue = function(name, time)
     {
         if (typeof updates[name] !== "undefined")
         {
@@ -72,6 +72,8 @@ function createBasylBinder($$)
             $$.update(name);
             delete updates[name];
         }, time);
+        
+        return $$
     }
 
     /**
@@ -84,7 +86,23 @@ function createBasylBinder($$)
      */
     $$.delay = function(source, to, time)
     {
-        $$.bind(source, () => $$.queueUpdate(to, time))
+        $$.bind(source, () => $$.queue(to, time))
+        return $$
+    }
+
+    /**
+     * Forces all queued updates to execute now.
+     */
+    $$.now = function()
+    {
+        Object.keys(updates).forEach(name =>
+        {
+            clearTimeout(updates[name])
+            $$.update(name)
+            delete updates[name]
+        })
+
+        return $$
     }
 
     /**
