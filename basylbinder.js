@@ -36,7 +36,7 @@ function createBasylBinder($$)
     $$.components = {}
     let bindUpdates = {}
     let updates = {}
-    let forceUpdate = 0;
+    let ignore = null
 
     // used to make duplicates or to simply
     // convert node lists to arrays
@@ -215,19 +215,20 @@ function createBasylBinder($$)
      */
     function updateFromInput(e, name, el, attr, get, set)
     {
-         // Garbage Collection
-         if (typeof $$.bindings[name] === "undefined")
-         {
-             delete el.oninput;
-             return;
-         }
+        // Garbage Collection
+        if (typeof $$.bindings[name] === "undefined")
+        {
+            delete el.oninput;
+            return;
+        }
 
-         // Used to prevent annoying field cursor resets.
-         const allowed = ["text", "url", "password", "telephone", "search", ""]
-         if (get() != e.target[attr])
-         {
+        // checks if the input is different 
+        if (get() != e.target[attr])
+        {
+            ignore = e.target
             set(e.target[attr])
-         }
+            ignore = null
+        }
     }
 
     /**
@@ -253,6 +254,9 @@ function createBasylBinder($$)
         // If the current value is not the same as the new one
         if (get() != e.target[attr])
         {
+            // use this to prevent an update to the element
+            ignore = e.target 
+
             // Because it's a checkbox, check if there's an on-true value it should be set to
             if (el.hasAttribute("on-true") && e.target[attr] == true)
             {
@@ -268,6 +272,8 @@ function createBasylBinder($$)
             {
                 set(e.target[attr])
             }
+
+            ignore = null
         }
     }
 
@@ -383,7 +389,7 @@ function createBasylBinder($$)
                 else
                 {
                     // Don't update the current element.
-                    if(document.activeElement != x[0])
+                    if(ignore != x[0])
                     {
                         // update the element
                         x[0][x[1]] = $$.bindings[name][0]();                 
