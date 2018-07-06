@@ -226,20 +226,7 @@ function createBasylBinder($$)
          const allowed = ["text", "url", "password", "telephone", "search", ""]
          if (get() != e.target[attr])
          {
-             if ((el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement) && allowed.indexOf((el.getAttribute('type') || "").toLowerCase().trim()) !== -1)
-             {
-                 let s = el.selectionStart,
-                     end = el.selectionEnd;
-
-                 set(e.target[attr])
-
-                 // Prevents annoying field cursor reset.
-                 el.setSelectionRange(s, end);
-             }
-             else
-             {
-                 set(e.target[attr])    
-             }
+            set(e.target[attr])
          }
     }
 
@@ -395,7 +382,21 @@ function createBasylBinder($$)
                 }
                 else
                 {
-                    x[0][x[1]] = $$.bindings[name][0]();
+                    // Don't update the current element.
+                    if(document.activeElement != x[0])
+                    {
+                        // update the element
+                        x[0][x[1]] = $$.bindings[name][0]();                 
+                    }
+                    else
+                    {
+                        // otherwise, update it when the element is blurred.
+                        x[0].onblur = () =>
+                        {
+                            x[0][x[1]] = $$.bindings[name][0]();
+                            delete x[0].onblur
+                        }       
+                    }
                 }
             });
 
