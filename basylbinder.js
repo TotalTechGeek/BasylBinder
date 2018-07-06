@@ -56,7 +56,6 @@ function createBasylBinder($$)
 
     /**
      * Queues an update, delays previous attempts at an update.
-     * This is currently not in use internally.
      * 
      * @param {*} name 
      * @param {*} time 
@@ -73,6 +72,19 @@ function createBasylBinder($$)
             $$.update(name);
             delete updates[name];
         }, time);
+    }
+
+    /**
+     * Creates a delayed binding. 
+     * Cancels an update upon new updates.
+     * 
+     * @param {*} source 
+     * @param {*} to 
+     * @param {*} time 
+     */
+    $$.delay = function(source, to, time)
+    {
+        $$.bind(source, () => $$.queueUpdate(to, time))
     }
 
     /**
@@ -609,8 +621,9 @@ function createBasylBinder($$)
             result.create = localBindVariant($$.create, [0])
             result.var = localBindVariant($$.var, [0])
             result.const = localBindVariant($$.const, [0])
-            result.bind = localBindVariant($$.bind, [0, '1'])
-            result.createView = localBindVariant($$.createView, [0, 1])
+            result.createView = localBindVariant($$.createView, ['0', 1])
+            result.bind = localBindVariant($$.bind, ['0', '1'])
+            result.delay = localBindVariant($$.delay, ['0', '1'])
 
             // This is a mess and needs documentation.
             result.watch = function(name)
