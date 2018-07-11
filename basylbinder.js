@@ -50,9 +50,11 @@ function createBasylBinder($$)
     const LOCAL_BIND_ID = "local-bind";
     const BASYL_VARS = "vars";
     const BASYL_SCRIPT = 'script[type="basyl-script"]';
+    const BASYL_STYLE = 'script[type="basyl-style"]';
     const BASYL_PVARS = "pvars";
     const BASYL_SVARS = "svars";
     const BASYL_PVAR_PREFIX = 'bb_';
+
 
     /**
      * Queues an update, delays previous attempts at an update.
@@ -789,12 +791,11 @@ function createBasylBinder($$)
                     }
                 }
 
-
                 // for the non-optimized values, create the binding function 
                 vals.forEach(i =>
                 {
                     if (!optimize)
-                        $$.bind(closest2(x, i[0]), func);
+                        result.bind(i[0], func);
                 })
 
                 func();
@@ -1048,9 +1049,20 @@ function createBasylBinder($$)
         return $$.create(name, () => v);
     }
 
-    // Persisted variable - These will only work in the global scope.
+    
+    /**
+     * Creates a persisted variable.
+     * Only works in global scope.
+     * 
+     * @param {*} name 
+     * @param {*} v 
+     * @param {*} g 
+     * @param {*} s 
+     */
     $$.pvar = function(name, v, g, s)
     {
+        if($$.bindings[name]) return
+
         const index = BASYL_PVAR_PREFIX + name;
 
         if(!localStorage[index])
@@ -1104,12 +1116,12 @@ function createBasylBinder($$)
      */
     function style(from)
     {        
-        $$.from('*' + from + 'basyl-style,script[type="basyl-style"]').for(i =>
+        $$.from('*' + from + BASYL_STYLE).for(i =>
         {
             let a = document.createElement("style");
             a.innerHTML = i.innerHTML;
             i.parentNode.replaceChild(a, i);
-            $$.from(a).watch("-html");
+            $$.from(a).watch("html");
         });
     }
 
@@ -1311,14 +1323,13 @@ function createBasylBinder($$)
     {
         from = fromFix(from)
         
-        style(from)
-
         // Component Code
         componentInit(from)
         componentMake(from)
 
         htmlvars(from)
 
+        style(from)
         basylScript(from)        
         basylWatch(from)
         basylBind(from)
