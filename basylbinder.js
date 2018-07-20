@@ -53,10 +53,9 @@ function createBasylBinder($$)
     const BASYL_STYLE = 'script[type="basyl-style"]';
     const BASYL_PVARS = "pvars";
     const BASYL_SVARS = "svars";
+    const BASYL_JVARS = "jvars"
     const BASYL_PVAR_PREFIX = 'bb_';
 
-
-    $$.bindings = () => bindings
     $$.components = () => components
 
     /**
@@ -643,6 +642,7 @@ function createBasylBinder($$)
 
             result.create = localBindVariant($$.create, [0])
             result.var = localBindVariant($$.var, [0])
+            result.jvar = localBindVariant($$.jvar, [0])
             result.const = localBindVariant($$.const, [0])
             result.createView = localBindVariant($$.createView, ['0', 1])
             result.bind = localBindVariant($$.bind, ['0', '1'])
@@ -1094,6 +1094,11 @@ function createBasylBinder($$)
         return $$;
     }
 
+    $$.jvar = function(name, v)
+    {
+        return $$.var(name, JSON.parse(v))
+    }
+
     $$.range = function(x, y)
     {
         return _toConsArray(Array(y - x + 1).keys()).map(i => i + x);
@@ -1137,24 +1142,21 @@ function createBasylBinder($$)
     {
         localScopes(from);
 
+        let func = (func) => (el) => $$.from(el)[func]
+        
         function varSetup(type, func)
         {
             $$.from('*' + from + type).for(el =>
             {
-                $$.from(el.attributes).for(i => $$.from(el)[func](i.name, i.value));
+                $$.from(el.attributes).for(i => func(el)(i.name, i.value));
                 el.parentNode.removeChild(el)
             })
         }
         
-        varSetup(BASYL_VARS, 'var')
-        varSetup(BASYL_SVARS, 'const')
-
-        $$.from('*' + from + BASYL_PVARS).for(el =>
-        {
-            // pvars have global scope by design.
-            $$.from(el.attributes).for(i=>$$.pvar(i.name, i.value));
-            el.parentNode.removeChild(el);
-        });
+        varSetup(BASYL_VARS, func('var'))
+        varSetup(BASYL_JVARS, func('jvar'))
+        varSetup(BASYL_SVARS, func('const'))
+        varSetup(BASYL_PVARS, () => $$.pvar)
        
         return $$;
     }
@@ -1190,7 +1192,7 @@ function createBasylBinder($$)
             if(!y.getAttribute('local-bind'))
                 y.setAttribute('local-bind', '')
             
-            let extraVars = y.querySelectorAll(BASYL_VARS + "," + BASYL_SVARS)
+            let extraVars = y.querySelectorAll(BASYL_VARS + ',' + BASYL_SVARS + ',' + BASYL_JVARS)
             
             y.innerHTML = components[type][0];
             $$.from(extraVars).for(i=>y.appendChild(i))
