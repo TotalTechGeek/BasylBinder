@@ -32,8 +32,8 @@ else
 
 function createBasylBinder($$)
 {
-    $$.bindings = {}
-    $$.components = {}
+    let bindings = {}
+    let components = {}
     let bindUpdates = {}
     let updates = {}
     let ignore = null
@@ -55,6 +55,9 @@ function createBasylBinder($$)
     const BASYL_SVARS = "svars";
     const BASYL_PVAR_PREFIX = 'bb_';
 
+
+    $$.bindings = () => bindings
+    $$.components = () => components
 
     /**
      * Queues an update, delays previous attempts at an update.
@@ -136,28 +139,28 @@ function createBasylBinder($$)
      */
     $$.make = function(type, vars)
     {
-        let varTag = ''
-        if(vars)
-        {
-            varTag = '<vars '
+        const BASYL_NOW = 'basyl-now'
 
-            Object.keys(vars).forEach(i=>
-            {
-                varTag += i.replace(/ /g, '') + '="' + vars[i] + '"'
-            })
-
-            varTag += '></vars>'
-        }
-        
         return { 
             appendTo: (el) => 
             {
-                let el2 = htmlToElement(`<component type="${type}" from>` + varTag +  `</component>`)
-                el.setAttribute('basyl-now', '')
+                let el2 = htmlToElement(`<component local-bind="${randStr()}" type="${type}" from></component>`)
                 el.appendChild(el2)
-                $$.all('[basyl-now]')
-                el.removeAttribute('basyl-now')
-                return $$.from(el2)
+                
+                let me = $$.from(el2)
+                if(vars)
+                {
+                    Object.keys(vars).forEach(i=>
+                    {
+                        me.var(i, vars[i])
+                    })
+                }
+
+                el.setAttribute(BASYL_NOW, '')
+                $$.all('[' + BASYL_NOW + ']')
+                el.removeAttribute(BASYL_NOW)
+
+                return me
             }
         }
     }
@@ -172,9 +175,9 @@ function createBasylBinder($$)
         htmlvars(' ')
         name = name.toLowerCase()
         if (typeof n === "string") n = n.toLowerCase()
-        if (typeof $$.bindings[name] !== "undefined")
+        if (typeof bindings[name] !== "undefined")
         {
-            $$.bindings[name][2].push(n);
+            bindings[name][2].push(n);
         }
         return $$;
     }
@@ -186,7 +189,7 @@ function createBasylBinder($$)
     $$.forget = function(name)
     {
         name = name.toLowerCase()
-        delete $$.bindings[name];
+        delete bindings[name];
         return $$;
     }
 
@@ -226,8 +229,8 @@ function createBasylBinder($$)
         if (!oneWay)
         {
             // If it isn't one way, update the current value and tell it to update this value
-            $$.bindings[name][2].push([el, attr]);
-            el[attr] = $$.bindings[name][0]();
+            bindings[name][2].push([el, attr]);
+            el[attr] = bindings[name][0]();
         }
 
         bindElementFinal(name, el, attr, () => $$.get(name), val => $$.set(name, val))
@@ -248,7 +251,7 @@ function createBasylBinder($$)
     function updateFromInput(e, name, el, attr, get, set)
     {
         // Garbage Collection
-        if (typeof $$.bindings[name] === "undefined")
+        if (typeof bindings[name] === "undefined")
         {
             delete el.oninput;
             return;
@@ -277,7 +280,7 @@ function createBasylBinder($$)
     function updateFromOther(e, name, el, attr, get, set)
     {
         // Garbage Collection
-        if (typeof $$.bindings[name] === "undefined")
+        if (typeof bindings[name] === "undefined")
         {
             delete el.oninput;
             return;
@@ -354,7 +357,7 @@ function createBasylBinder($$)
         name = closest2(el, name);
 
         // Checks if the binding exists, and the element we're binding to exists.
-        if (typeof $$.bindings[name] !== "undefined" && typeof el !== "undefined")
+        if (typeof bindings[name] !== "undefined" && typeof el !== "undefined")
         {
             bindElementNormal(name, el, attr, oneWay)
         }
@@ -374,7 +377,7 @@ function createBasylBinder($$)
         getter = getter || emptyFunction;
         setter = setter || emptyFunction;
         bindUpdates[name] = false;
-        $$.bindings[name] = [getter, setter, []];
+        bindings[name] = [getter, setter, []];
         return $$;
     }
 
@@ -390,7 +393,7 @@ function createBasylBinder($$)
     $$.createView = function(name, formattedName, mutator)
     {
         name = name.toLowerCase(), formattedName = formattedName.toLowerCase()
-        if (typeof $$.bindings[name] === "undefined") htmlvars(' ');
+        if (typeof bindings[name] === "undefined") htmlvars(' ');
         $$.create(formattedName, () => mutator($$.get(name)));
         $$.bind(name, formattedName);
         return $$;
@@ -404,11 +407,11 @@ function createBasylBinder($$)
     {
         name = name.toLowerCase()
 
-        if (typeof $$.bindings[name] !== "undefined")
+        if (typeof bindings[name] !== "undefined")
         {
             if (bindUpdates[name]) return $$;
             bindUpdates[name] = true;
-            $$.bindings[name][2].forEach(x =>
+            bindings[name][2].forEach(x =>
             {
                 if (typeof x === "string")
                 {
@@ -424,14 +427,14 @@ function createBasylBinder($$)
                     if(ignore != x[0])
                     {
                         // update the element
-                        x[0][x[1]] = $$.bindings[name][0]();                 
+                        x[0][x[1]] = bindings[name][0]();                 
                     }
                     else
                     {
                         // otherwise, update it when the element is blurred.
                         x[0].onblur = () =>
                         {
-                            x[0][x[1]] = $$.bindings[name][0]();
+                            x[0][x[1]] = bindings[name][0]();
                             delete x[0].onblur
                         }       
                     }
@@ -451,9 +454,9 @@ function createBasylBinder($$)
     $$.get = function(name)
     {
         name = name.toLowerCase()
-        if (typeof $$.bindings[name] !== "undefined")
+        if (typeof bindings[name] !== "undefined")
         {
-            return $$.bindings[name][0]();
+            return bindings[name][0]();
         }
     }
 
@@ -465,14 +468,14 @@ function createBasylBinder($$)
     $$.set = function(name, v)
     {
         name = name.toLowerCase();
-        if (typeof $$.bindings[name] !== "undefined")
+        if (typeof bindings[name] !== "undefined")
         {
             if (bindUpdates[name]) return;
             
             // Checks if the setter exists
-            if($$.bindings[name][1])
+            if(bindings[name][1])
             {                
-                $$.bindings[name][1](v);
+                bindings[name][1](v);
                 $$.update(name);    
             }
         }
@@ -498,7 +501,7 @@ function createBasylBinder($$)
             return y.getAttribute(LOCAL_BIND_ID).toLowerCase() + ':' + key;
         }
 
-        if (typeof $$.bindings[key] !== "undefined")
+        if (typeof bindings[key] !== "undefined")
             return key;
 
         return null;
@@ -518,7 +521,7 @@ function createBasylBinder($$)
         {
             if (el.matches(selector))
             {
-                if (typeof key === "undefined" || key === "" || typeof $$.bindings[el.getAttribute(LOCAL_BIND_ID).toLowerCase() + ':' + key.toLowerCase()] !== 'undefined')
+                if (typeof key === "undefined" || key === "" || typeof bindings[el.getAttribute(LOCAL_BIND_ID).toLowerCase() + ':' + key.toLowerCase()] !== 'undefined')
                 {
                     retval = el;
                     break
@@ -1011,7 +1014,8 @@ function createBasylBinder($$)
 
     $$.search = function(name, from)
     {
-        let search = (name) => Object.keys($$.bindings).filter(i => i.match(name));
+        name = (name||'').toLowerCase()
+        let search = (name) => Object.keys(bindings).filter(i => i.match(name));
 
         if(from)
         {
@@ -1061,7 +1065,7 @@ function createBasylBinder($$)
      */
     $$.pvar = function(name, v, g, s)
     {
-        if($$.bindings[name]) return
+        if(bindings[name]) return
 
         const index = BASYL_PVAR_PREFIX + name;
 
@@ -1163,7 +1167,7 @@ function createBasylBinder($$)
     {
         $$.from('*' + from + "component[make]").for(y =>
         {
-            $$.components[y.getAttribute("type")] = [y.innerHTML];
+            components[y.getAttribute("type")] = [y.innerHTML];
             y.parentNode.removeChild(y);
         });
     }
@@ -1183,12 +1187,14 @@ function createBasylBinder($$)
             y.removeAttribute("from");
             y.setAttribute("watch", "html");
             
+            if(!y.getAttribute('local-bind'))
+                y.setAttribute('local-bind', '')
+            
             let extraVars = y.querySelectorAll(BASYL_VARS + "," + BASYL_SVARS)
             
-            y.innerHTML = $$.components[type][0];
+            y.innerHTML = components[type][0];
             $$.from(extraVars).for(i=>y.appendChild(i))
             
-            if(extraVars.length) y.setAttribute('local-bind', '')
         })
     }
 
@@ -1259,7 +1265,7 @@ function createBasylBinder($$)
         $$.from('*' + from + '[bind]:not([bound])').for((y) =>
         {
             let bind = closest2(y, y.getAttribute("bind"));
-            if (typeof $$.bindings[bind] === "undefined")
+            if (typeof bindings[bind] === "undefined")
             {
                 attempt++;
                 if (attempt < 4)
