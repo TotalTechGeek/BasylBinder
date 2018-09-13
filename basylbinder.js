@@ -730,8 +730,9 @@ function createBasylBinder($$)
                             }
                             else if (it instanceof Text)
                             {
+                                let boundCheck = false
                                 data = it.data;
-
+        
                                 if (data.trim() !== "")
                                 {
                                     regExpressions.forEach((j, i) =>
@@ -751,13 +752,17 @@ function createBasylBinder($$)
                                         
                                         // sets the binding type (html vs text)
                                         let bindType = (orig == "*innerHTML" || orig == "html") ? 'bind-to="innerHTML"' : '';
+
+                                        // confirms that it was bound
+                                        boundCheck = true
                                         
                                         // add a bound element to the html
                                         data = data.replace(j, '<v bind="' + bound + '"' + bindType + '></v>');
                                     })
 
-                                    // insert the bound elements
-                                    it.parentNode.replaceChild(new DOMParser().parseFromString("<v>" + data + "</v>", "text/html").childNodes[0].childNodes[1].childNodes[0], it);
+                                    // insert the bound elements, if anything bound                                    
+                                    if(boundCheck)
+                                        it.parentNode.replaceChild(new DOMParser().parseFromString("<v>" + data + "</v>", "text/html").childNodes[0].childNodes[1].childNodes[0], it);
                                 }
                             }
                         });
