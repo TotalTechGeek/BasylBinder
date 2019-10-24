@@ -1,19 +1,23 @@
 {
   "name": "bb",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "",
   "main": "basylbinder.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "babel": "mkdirp build && babel basylbinder.js -o build/basylbinder-es5.min.js && minify build/basylbinder-es5.min.js -o build/basylbinder-es5.min.js && minify basylbinder.js -o build/basylbinder.min.js && file-merge -i **/ajslicense.txt,**/build/basylbinder.min.js -o build/basylbinder.min.js && file-merge -i **/ajslicense.txt,**/build/basylbinder-es5.min.js -o build/basylbinder-es5.min.js"
+    "babel": "mkdirp build && babel basylbinder.js -o build/basylbinder-es5.min.js && minify build/basylbinder-es5.min.js -o build/basylbinder-es5.min.js && minify basylbinder.js -o build/basylbinder.min.js && concat -o build/basylbinder.min.js ajslicense.txt build/basylbinder.min.js && concat -o build/basylbinder-es5.min.js ajslicense.txt build/basylbinder-es5.min.js"
   },
   "author": "Jesse Daniel Mitchell",
   "license": "MIT",
   "devDependencies": {
-    "babel-cli": "^6.26.0",
+    "@babel/cli": "^7.6.4",
+    "@babel/core": "^7.6.4",
     "babel-minify": "^0.2.0",
     "babel-preset-es2015-without-strict": "0.0.4",
-    "mkdirp": "^0.5.1",
-    "file-merge": "^1.0.0"
+    "concat": "^1.0.3",
+    "mkdirp": "^0.5.1"
+  },
+  "dependencies": {
+    "@babel/preset-env": "^7.6.3"
   }
 }
