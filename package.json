@@ -15,9 +15,7 @@
     "babel-minify": "^0.2.0",
     "babel-preset-es2015-without-strict": "0.0.4",
     "concat": "^1.0.3",
-    "mkdirp": "^0.5.1"
-  },
-  "dependencies": {
+    "mkdirp": "^0.5.1",
     "@babel/preset-env": "^7.6.3"
   }
 }
